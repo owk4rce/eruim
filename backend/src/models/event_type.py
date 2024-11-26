@@ -1,8 +1,8 @@
-from backend.src.config.db import db
+from mongoengine import Document, StringField
 
 
-class EventType(db.Document):
-    name_ru = db.StringField(
+class EventType(Document):
+    name_ru = StringField(
         required=True,
         min_length=3,
         max_length=20,
@@ -15,7 +15,7 @@ class EventType(db.Document):
         }
     )
 
-    name_en = db.StringField(
+    name_en = StringField(
         required=True,
         min_length=3,
         max_length=20,
@@ -28,7 +28,7 @@ class EventType(db.Document):
         }
     )
 
-    name_he = db.StringField(
+    name_he = StringField(
         required=True,
         min_length=3,
         max_length=20,
@@ -41,7 +41,7 @@ class EventType(db.Document):
         }
     )
 
-    slug = db.StringField(
+    slug = StringField(
         required=True,
         unique=True,
         max_length=15,

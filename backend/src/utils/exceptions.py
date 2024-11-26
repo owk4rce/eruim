@@ -9,5 +9,5 @@ class CityGeoNameError(Exception):
 
 
 class CityValidationError(Exception):
-    """Raised when geocoding service fails"""
+    """Raised when city or alt names not found"""
     pass

@@ -1,15 +1,15 @@
 from flask import Blueprint, jsonify, request
-from mongoengine.connection import get_db
 from backend.src.models.city import City
 from backend.src.utils.exceptions import ConfigurationError, CityGeoNameError, CityValidationError
 from mongoengine.errors import ValidationError, NotUniqueError
 from werkzeug.exceptions import BadRequest
 from slugify import slugify
 from backend.src.services.geonames_service import validate_and_get_names
+from backend.src.utils.language_utils import validate_language
 
 
 # Create Blueprint for cities
-cities_bp = Blueprint('cities', __name__, url_prefix='/cities')
+cities_bp = Blueprint("cities", __name__, url_prefix="/cities")
 
 
 @cities_bp.route("/", methods=["GET"])
@@ -28,14 +28,15 @@ def get_cities():
     """
     try:
         # Get language preference from query parameter, default to English
-        language = request.args.get('lang', 'en')
-        if language not in ['en', 'ru', 'he']:
+        lang_arg = request.args.get("lang", "en")
+        language = validate_language(lang_arg)
+        if language is None:
             return jsonify({
                 'status': 'error',
-                'message': f'Unsupported language: {language}'
+                'message': f'Unsupported language: {lang_arg}'
             }), 400
 
-        # Get all active cities from database
+        # Get all cities from database
         cities = City.objects()
         # Format response data using the requested language
         cities_data = [{
@@ -72,10 +73,10 @@ def add_city():
                 'message': 'Body parameters are missing.'
             }), 400
 
-        if len(data) != 1 or 'name_en' not in data:
+        if len(data) != 1 or "name_en" not in data:
             return jsonify({
-                'status': 'error',
-                'message': 'Body of request must contain only name_en field'
+                "status": "error",
+                "message": "Body of request must contain only 'name_en' field"
             }), 400
 
         names = validate_and_get_names(data['name_en'])
@@ -129,7 +130,6 @@ def add_city():
         }), 503
 
     except Exception as e:  # Unexpected errors
-        print(f"Error type: {type(e)}, Message: {str(e)}")
         print(f"Error in add_city: {str(e)}")  # log for debugging
         return jsonify({
             'status': 'error',

@@ -1,15 +1,3 @@
-# from flask_mongoengine import MongoEngine
-# import os
-#
-# db = MongoEngine()
-#
-#
-# def connect_db(app):
-#     app.config['MONGODB_HOST'] = os.getenv('DB_PATH')
-#     print(os.getenv('DB_PATH'))
-#     db.init_app(app)
-#     print("Connected to MongoDB")
-
 from mongoengine import connect
 from mongoengine.connection import get_db
 import os
@@ -33,20 +21,6 @@ def connect_db():
         connection = connect(db=db_name, host=db_path)
         print("Connected to MongoDB")
 
-        #db = connection.get_database('eruim')
-        #db = get_db()
-
-
-
-
-        #collections = db.list_collection_names()
-        #print(collections)
-        # required_collections = ["cities", "events", "venues", "event_types", "users"]
-        #
-        # for collection in required_collections:
-        #     if collection not in collections:
-        #         db.create_collection(collection)
-        #         print(f"Created collection: {collection}")
         return connection
     except Exception as e:
         print(f"Failed to connect to MongoDB: {str(e)}")

@@ -1,8 +1,4 @@
-from requests import get, RequestException
-from slugify import slugify
-from mongoengine import Document, StringField, ValidationError
-import os
-
+from mongoengine import Document, StringField
 
 
 class City(Document):
@@ -67,24 +63,3 @@ class City(Document):
 
     def get_name(self, lang="en"):
         return getattr(self, f'name_{lang}')
-
-    # def clean(self):
-    #     """
-    #     Custom validation using GeoNames API
-    #     """
-    #     # Only validate if this is a new document or name_en has changed
-    #     if self._created or self._get_changed_fields().get('name_en'):
-    #         try:
-    #             names = self.validate_and_get_names(self.name_en)
-    #             print(names)
-    #             # Update names if they're different
-    #             if self.name_ru != names['ru']:
-    #                 self.name_ru = names['ru']
-    #             if self.name_he != names['he']:
-    #                 self.name_he = names['he']
-    #
-    #             if not self.slug:
-    #                 self.slug = slugify(self.name_en)
-    #
-    #         except ValidationError as e:
-    #             raise ValidationError(f"City validation failed: {str(e)}")

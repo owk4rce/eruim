@@ -1,0 +1,2 @@
+SUPPORTED_LANGUAGES = ["en", "ru", "he"]
+DEFAULT_LANGUAGE = "en"

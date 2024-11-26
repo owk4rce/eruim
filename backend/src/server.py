@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
 from backend.src.config.db import connect_db
-#from backend.src.config.db import connect_db
 from backend.src.routes import api_v1_bp
 
 load_dotenv()
