@@ -1,4 +1,4 @@
-from mongoengine import Document, StringField, ReferenceField, PointField, URLField, BooleanField
+from mongoengine import Document, StringField, ReferenceField, PointField, URLField, BooleanField, EmailField
 
 
 class Venue(Document):
@@ -136,10 +136,17 @@ class Venue(Document):
         }
     )
 
+    email = EmailField(
+        error_messages={
+            'invalid': 'Invalid email format'
+        }
+    )
+
     is_active = BooleanField(default=True)
 
     image_path = StringField(
         required=True,
+        default='/static/img/venues/default/default.png',
         regex=r'^/static/img/venues/[\w-]+/[\w-]+\.png$',
         error_messages={
             'required': 'Image path is required',
