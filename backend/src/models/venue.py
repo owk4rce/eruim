@@ -1,8 +1,8 @@
-from backend.src.config.db import db
+from mongoengine import Document, StringField, ReferenceField, PointField, URLField, BooleanField
 
 
-class Venue(db.Document):
-    name_ru = db.StringField(
+class Venue(Document):
+    name_ru = StringField(
         required=True,
         min_length=3,
         max_length=100,
@@ -15,7 +15,7 @@ class Venue(db.Document):
         }
     )
 
-    name_en = db.StringField(
+    name_en = StringField(
         required=True,
         min_length=3,
         max_length=100,
@@ -28,7 +28,7 @@ class Venue(db.Document):
         }
     )
 
-    name_he = db.StringField(
+    name_he = StringField(
         required=True,
         min_length=3,
         max_length=100,
@@ -41,7 +41,7 @@ class Venue(db.Document):
         }
     )
 
-    address_ru = db.StringField(
+    address_ru = StringField(
         required=True,
         min_length=5,
         max_length=200,
@@ -52,7 +52,7 @@ class Venue(db.Document):
         }
     )
 
-    address_en = db.StringField(
+    address_en = StringField(
         required=True,
         min_length=5,
         max_length=200,
@@ -63,7 +63,7 @@ class Venue(db.Document):
         }
     )
 
-    address_he = db.StringField(
+    address_he = StringField(
         required=True,
         min_length=5,
         max_length=200,
@@ -74,7 +74,7 @@ class Venue(db.Document):
         }
     )
 
-    description_ru = db.StringField(
+    description_ru = StringField(
         required=True,
         min_length=20,
         max_length=1000,
@@ -85,7 +85,7 @@ class Venue(db.Document):
         }
     )
 
-    description_en = db.StringField(
+    description_en = StringField(
         required=True,
         min_length=20,
         max_length=1000,
@@ -96,7 +96,7 @@ class Venue(db.Document):
         }
     )
 
-    description_he = db.StringField(
+    description_he = StringField(
         required=True,
         min_length=20,
         max_length=1000,
@@ -107,7 +107,7 @@ class Venue(db.Document):
         }
     )
 
-    city = db.ReferenceField(
+    city = ReferenceField(
         'City',
         required=True,
         index=True,
@@ -116,35 +116,38 @@ class Venue(db.Document):
         }
     )
 
-    location = db.PointField(
+    location = PointField(
         required=True,
         error_messages={
             'required': 'Location coordinates are required'
         }
     )
 
-    website = db.URLField(
+    website = URLField(
         error_messages={
             'invalid': 'Invalid URL format'
         }
     )
 
-    phone = db.StringField(
+    phone = StringField(
         regex=r'^\+?1?\d{9,15}$',
         error_messages={
             'regex': 'Invalid phone number format'
         }
     )
 
-    is_active = db.BooleanField(default=True)
+    is_active = BooleanField(default=True)
 
-    image_url = db.URLField(
+    image_path = StringField(
+        required=True,
+        regex=r'^/static/img/venues/[\w-]+/[\w-]+\.png$',
         error_messages={
-            'invalid': 'Invalid image URL format'
+            'required': 'Image path is required',
+            'regex': 'Invalid image path format. Should be /static/img/venues/venue-slug/venue-slug.png'
         }
     )
 
-    slug = db.StringField(
+    slug = StringField(
         required=True,
         unique=True,
         max_length=100,

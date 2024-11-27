@@ -1,5 +1,4 @@
-#from backend.src.config.db import db
-from mongoengine import Document, StringField, ValidationError, DateTimeField, ReferenceField, DictField, URLField
+from mongoengine import Document, StringField, ValidationError, DateTimeField, ReferenceField, IntField, BooleanField
 from datetime import datetime
 
 
@@ -99,36 +98,41 @@ class Event(Document):
         }
     )
 
-    category = StringField(
+    event_type = ReferenceField(
+        'EventType',
         required=True,
-        choices=['concert', 'theater', 'exhibition', 'festival', 'sport', 'other'],
+        index=True,
         error_messages={
-            'required': 'Category is required',
-            'choices': 'Invalid category'
+            'required': 'Event type reference is required'
         }
     )
 
-    status = StringField(
+    is_active = BooleanField(
+        default=True
+    )
+
+    price_type = StringField(
         required=True,
-        choices=['draft', 'published', 'cancelled'],
-        default='draft',
+        choices=['free', 'tba', 'fixed', 'starting_from'],
         error_messages={
-            'choices': 'Invalid status'
+            'required': 'Price type is required',
+            'choices': 'Invalid price type'
         }
     )
 
-    price_range = DictField(
-        required=True,
+    price_amount = IntField(
+        min_value=0,
         error_messages={
-            'required': 'Price range is required'
+            'min_value': 'Price amount cannot be negative'
         }
     )
 
-    image_url = URLField(
+    image_path = StringField(
         required=True,
+        regex=r'^/static/img/events/[\w-]+/[\w-]+\.png$',
         error_messages={
-            'required': 'Image URL is required',
-            'invalid': 'Invalid image URL format'
+            'required': 'Image path is required',
+            'regex': 'Invalid image path format. Should be /static/img/events/event-slug/event-slug.png'
         }
     )
 
@@ -139,18 +143,39 @@ class Event(Document):
             "name_en",
             "name_he",
             'venue',
-            'category',
+            'event_type',
             'start_date',
-            'status'
+            'is_active'
         ]
     }
 
     def clean(self):
+        """Validate event dates and price logic"""
         if self.end_date < self.start_date:
             raise ValidationError('End date must be after start date')
+
+        # Validate price logic
+        if self.price_type in ['fixed', 'starting_from']:
+            if self.price_amount is None:
+                raise ValidationError('Price amount is required for fixed and starting_from price types')
+        elif self.price_type in ['free', 'tba']:
+            if self.price_amount is not None:
+                raise ValidationError('Price amount should not be set for free or TBA events')
 
     def get_name(self, lang='en'):
         return getattr(self, f'name_{lang}')
 
     def get_description(self, lang='en'):
         return getattr(self, f'description_{lang}')
+
+    @property
+    def is_single_day_event(self):
+        """Check if event starts and ends on the same day"""
+        return self.start_date.date() == self.end_date.date()
+
+    def get_formatted_time(self):
+        """Get formatted time string based on event type"""
+        if self.is_single_day_event:
+            return f"{self.start_date.strftime('%H:%M')} - {self.end_date.strftime('%H:%M')}"
+        else:
+            return f"{self.start_date.strftime('%d.%m.%Y')} - {self.end_date.strftime('%d.%m.%Y')}"

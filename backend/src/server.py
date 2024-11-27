@@ -6,13 +6,12 @@ from backend.src.routes import api_v1_bp
 
 load_dotenv()
 app = Flask(__name__)
-app.url_map.strict_slashes = False # no need for the end slash in endpoint
+app.url_map.strict_slashes = False  # no need for the end slash in endpoint
 CORS(app)
 
 connect_db()
 
 app.register_blueprint(api_v1_bp)
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
