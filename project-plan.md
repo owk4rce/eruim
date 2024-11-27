@@ -18,6 +18,75 @@ All interaction with the system through API endpoints (Postman)
 - **EventType**: Categorization of events
 - **User**: Authentication and authorization entity
 
+```mermaid
+erDiagram
+    CITY {
+        string name_ru
+        string name_en
+        string name_he
+        string slug
+    }
+    
+    VENUE {
+        string name_ru
+        string name_en
+        string name_he
+        string address_ru
+        string address_en
+        string address_he
+        string description_ru
+        string description_en
+        string description_he
+        reference city
+        point location
+        string website
+        string phone
+        boolean is_active
+        string image_path
+        string slug
+    }
+    
+    EVENT {
+        string name_ru
+        string name_en
+        string name_he
+        string description_ru
+        string description_en
+        string description_he
+        datetime start_date
+        datetime end_date
+        reference venue
+        reference event_type
+        boolean is_active
+        string price_type
+        integer price_amount
+        string image_path
+        string slug
+    }
+    
+    EVENT_TYPE {
+        string name_ru
+        string name_en
+        string name_he
+        string slug
+    }
+    
+    USER {
+        string email
+        string password_hash
+        string role
+        boolean is_active
+        array favorite_events
+        datetime created_at
+        datetime last_login
+    }
+
+    CITY ||--o{ VENUE : has
+    VENUE ||--o{ EVENT : hosts
+    EVENT_TYPE ||--o{ EVENT : classifies
+    USER }o--o{ EVENT : favorites
+```
+
 ### Database Choice Justification
 MongoDB advantages for our system:
 - Flexible schema for multilingual content
