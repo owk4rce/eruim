@@ -1,4 +1,4 @@
-# Event Management System Project Plan
+# Aggregator of Cultural Events (Project Plan)
 
 ## 1. Idea Description
 A multilingual REST API for event management system in Israeli cities that provides:
