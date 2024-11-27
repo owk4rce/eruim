@@ -1,11 +1,12 @@
 # Aggregator of Cultural Events (Project Plan)
 
 ## 1. Idea Description
-A multilingual REST API for event management system in Israeli cities that provides:
+A multilingual REST API for event aggregation system in Israeli cities that provides:
 - Public access to events data
 - Support for three languages (EN/RU/HE)
 - Role-based content management
 - Favorites for registered users
+
 All interaction with the system through API endpoints (Postman)
 
 ## 2. Data Structure
@@ -40,7 +41,6 @@ MongoDB advantages for our system:
 - **PyJWT**: JWT handling
 - **python-slugify**: URL-friendly slugs
 - **logging**: Application logging
-- **APScheduler**: Tasks automation
 
 ## 4. Feature List
 
@@ -57,12 +57,12 @@ MongoDB advantages for our system:
 - File upload for images
 - Request rate limiting
 - System logging
-- Automated cleanup of past events
+- API documentation
 
 ### Optional Features (if time permits):
 - Additional automated tasks
 - Enhanced logging features
-- API documentation
+- Automated cleanup of past events
 
 ## 5. API Structure
 
