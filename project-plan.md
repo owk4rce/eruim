@@ -129,7 +129,7 @@ MongoDB advantages for our system:
 - API documentation
 
 ### Optional Features (if time permits):
-- Additional automated tasks
+- Automated tests
 - Enhanced logging features
 - Automated cleanup of past events
 
