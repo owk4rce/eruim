@@ -1,7 +1,7 @@
 # Aggregator of Cultural Events (Project Plan)
 
 ## 1. Idea Description
-A multilingual REST API for event aggregation system in Israeli cities that provides:
+A REST API for multilingual event aggregation system in Israeli cities that provides:
 - Public access to events data
 - Support for three languages (EN/RU/HE)
 - Role-based content management
