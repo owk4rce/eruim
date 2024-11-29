@@ -7,6 +7,7 @@ class EventType(Document):
         min_length=3,
         max_length=20,
         regex=r'^[а-яА-ЯёЁ\s-]+$',
+        transform=lambda x: x.lower() if x else x,  # always lowercase
         error_messages={
             'required': 'Russian type name is required',
             'min_length': 'Russian name must be at least 3 characters long',
@@ -20,6 +21,7 @@ class EventType(Document):
         min_length=3,
         max_length=20,
         regex=r'^[a-zA-Z\s-]+$',
+        transform=lambda x: x.lower() if x else x,  # always lowercase
         error_messages={
             'required': 'English type name is required',
             'min_length': 'English name must be at least 3 characters long',

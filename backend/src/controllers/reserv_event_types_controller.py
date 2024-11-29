@@ -1,8 +1,6 @@
 from flask import request, jsonify
 from slugify import slugify
-
-from backend.src.services.translation_service import translate_with_google
-from backend.src.utils.constants import REQUIRED_EVENT_TYPE_BODY_PARAMS, ALLOWED_EVENT_TYPE_BODY_PARAMS
+from backend.src.utils.constants import REQUIRED_EVENT_TYPE_BODY_PARAMS
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.language_utils import validate_language
 from backend.src.models.event_type import EventType
@@ -64,43 +62,19 @@ def create_new_event_type():
     if not data:
         raise UserError("Body parameters are missing.")
 
-    unknown_params = set(data.keys()) - ALLOWED_EVENT_TYPE_BODY_PARAMS
-    if unknown_params:
-        raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
-
-    if len(data) > 3:
+    if len(data) != 3:
         raise UserError("Incorrect number of parameters in body.")
 
-    if "name_en" in data:
-        source_lang = "en"
-        source_text = data["name_en"]
-    elif "name_he" in data:
-        source_lang = "iw"  # Google Translate uses 'iw'
-        source_text = data["name_he"]
-    elif "name_ru" in data:
-        source_lang = "ru"
-        source_text = data["name_ru"]
-    else:
-        raise UserError("At least one 'name' in any language must be provided")
+    for param in REQUIRED_EVENT_TYPE_BODY_PARAMS:
+        if param not in data:
+            raise UserError(f"Body parameter '{param}' is missing")
+        elif not isinstance(data[param], str):
+            raise UserError(f"Body parameter {param} must be a string")
 
-    name_en = data.get("name_en")
-    name_ru = data.get("name_ru")
-    name_he = data.get("name_he")
-
-    if not name_en:
-        target_lang = "en"
-        name_en = translate_with_google(source_text, source_lang, target_lang)
-    if not name_he:
-        target_lang = "iw"
-        name_he = translate_with_google(source_text, source_lang, target_lang)
-    if not name_ru:
-        target_lang = "ru"
-        name_ru = translate_with_google(source_text, source_lang, target_lang)
-
-    event_type = EventType(name_en=name_en,
-                           name_ru=name_ru,
-                           name_he=name_he,
-                           slug=slugify(name_en)
+    event_type = EventType(name_en=data["name_en"],
+                           name_ru=data["name_ru"],
+                           name_he=data["name_he"],
+                           slug=slugify(data["name_en"])
                            )
     event_type.save()
 
@@ -108,3 +82,4 @@ def create_new_event_type():
         "status": "success",
         "message": "Event type created successfully"
     }), 201
+
