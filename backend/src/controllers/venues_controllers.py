@@ -7,6 +7,7 @@ from backend.src.services.geonames_service import validate_and_get_names
 from backend.src.services.here_service import validate_and_get_addr_and_location
 from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
 from backend.src.utils.exceptions import UserError
+from backend.src.utils.file_utils import validate_image, save_venue_image
 from backend.src.utils.language_utils import validate_language
 from backend.src.utils.constants import ALLOWED_VENUE_BODY_PARAMS, OPTIONAL_VENUE_BODY_PARAMS, \
     STRICTLY_REQUIRED_VENUE_BODY_PARAMS
@@ -98,12 +99,21 @@ def create_new_venue():
         - status: success/error
         - message: new venue created
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    file = None
+    if request.content_type.startswith("multipart/form-data"):  # expecting file via form
+        data = request.form.to_dict()
+        if not data:
+            raise UserError("Form data is empty")
 
-    data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
+        if 'image' in request.files:
+            file = request.files["image"]
+            validate_image(file)
+    elif not request.is_json:
+        raise UserError("Content-Type must be either multipart/form-data or application/json", 415)
+    else:
+        data = request.get_json()
+        if not data:
+            raise UserError("JSON body is empty")
 
     unknown_params = set(data.keys()) - ALLOWED_VENUE_BODY_PARAMS
     if unknown_params:
@@ -119,7 +129,7 @@ def create_new_venue():
         if param in data and not isinstance(data["website"], str):
             raise UserError(f"Body parameter {param} must be a string.")
 
-    if 12 < len(data) < 4:
+    if 11 < len(data) < 4:
         raise UserError("Incorrect number of parameters in body.")
 
     if "name_en" in data:
@@ -254,6 +264,10 @@ def create_new_venue():
         website=data.get("website"),
         slug=slugify(name_en)
     )
+
+    if "image" in request.files:
+        image_path = save_venue_image(file, venue.slug)
+        venue.image_path = image_path
 
     venue.save()
 

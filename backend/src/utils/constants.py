@@ -1,3 +1,5 @@
+import os
+
 SUPPORTED_LANGUAGES = ["en", "ru", "he"]
 DEFAULT_LANGUAGE = "en"
 
@@ -13,9 +15,13 @@ STRICTLY_REQUIRED_VENUE_BODY_PARAMS = [
 ]
 
 OPTIONAL_VENUE_BODY_PARAMS = [
-    "website", "phone", "email", "image_path"
+    "website", "phone", "email"
 ]
 
 REQUIRED_EVENT_TYPE_BODY_PARAMS = ['name_en', 'name_ru', 'name_he']
 
 ALLOWED_EVENT_TYPE_BODY_PARAMS = {'name_en', 'name_ru', 'name_he'}
+
+ALLOWED_IMG_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads')

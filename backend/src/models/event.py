@@ -129,10 +129,10 @@ class Event(Document):
 
     image_path = StringField(
         required=True,
-        regex=r'^/static/img/events/[\w-]+/[\w-]+\.png$',
+        regex=r'^/uploads/img/events/[\w-]+/[\w-]+\.png$',
         error_messages={
             'required': 'Image path is required',
-            'regex': 'Invalid image path format. Should be /static/img/events/event-slug/event-slug.png'
+            'regex': 'Invalid image path format. Should be /uploads/img/events/event-slug/event-slug.png'
         }
     )
 
