@@ -71,6 +71,10 @@ def create_new_event_type():
     if len(data) > 3:
         raise UserError("Incorrect number of parameters in body.")
 
+    for param in data:
+        if not isinstance(data[param], str):
+            raise UserError(f"Parameter '{param}' must be a string")
+
     if "name_en" in data:
         source_lang = "en"
         source_text = data["name_en"]

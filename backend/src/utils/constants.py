@@ -8,10 +8,8 @@ ALLOWED_VENUE_BODY_PARAMS = {
     "city_en", "website", "phone", "email"
 }
 
-REQUIRED_VENUE_BODY_PARAMS = [
-    'name_en', 'name_ru', 'name_he',
-    'address_en', 'city_en',
-    'description_en', 'description_ru', 'description_he'
+STRICTLY_REQUIRED_VENUE_BODY_PARAMS = [
+    'address_en', 'city_en'
 ]
 
 OPTIONAL_VENUE_BODY_PARAMS = [
