@@ -16,6 +16,16 @@ def register_error_handlers(app):
 
     @app.errorhandler(ValidationError)
     def handle_validation_error(error):
+        """Handle MongoEngine ValidationError"""
+        # errors = error.to_dict()
+        # print(errors)
+        # print(error)
+        # print(error.errors.items())
+        #
+        # return jsonify({
+        #     'status': 'error',
+        #     'messages': errors if errors else str(error)
+        # }), 400
         return jsonify({
             'status': 'error',
             'message': str(error)
