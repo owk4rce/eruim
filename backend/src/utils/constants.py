@@ -7,6 +7,10 @@ SUPPORTED_LANGUAGES = ["en", "ru", "he"]
 DEFAULT_LANGUAGE = "en"
 
 # Venue
+ALLOWED_VENUE_GET_ALL_ARGS = {
+    "lang", "is_active"
+}
+
 ALLOWED_VENUE_BODY_PARAMS = {
     "name_en", "name_ru", "name_he",
     "address_en", "address_ru", "address_he",
@@ -14,7 +18,7 @@ ALLOWED_VENUE_BODY_PARAMS = {
     "venue_type_en", "city_en", "website", "phone", "email"
 }
 
-STRICTLY_REQUIRED_VENUE_BODY_PARAMS = [
+STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS = [
     "address_en", "city_en", "venue_type_en"
 ]
 
@@ -58,6 +62,10 @@ EVENT_TYPE_PATTERNS = {
 }
 
 # Venue type
+ALLOWED_VENUE_TYPE_GET_ALL_ARGS = {
+    "lang"
+}
+
 ALLOWED_VENUE_TYPE_BODY_PARAMS = {'name_en', 'name_ru', 'name_he'}
 
 VENUE_TYPE_PATTERNS = {

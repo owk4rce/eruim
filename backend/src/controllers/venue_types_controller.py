@@ -3,7 +3,8 @@ from slugify import slugify
 from backend.src.models.venue import Venue
 from backend.src.models.venue_type import VenueType
 from backend.src.services.translation_service import translate_with_google
-from backend.src.utils.constants import ALLOWED_VENUE_TYPE_BODY_PARAMS
+from backend.src.utils.constants import ALLOWED_VENUE_TYPE_BODY_PARAMS, ALLOWED_VENUE_TYPE_GET_ALL_ARGS, \
+    SUPPORTED_LANGUAGES
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.language_utils import validate_language
 from backend.src.utils.pre_mongo_validators import validate_venue_type_data
@@ -35,20 +36,52 @@ def get_all_venue_types():
     if request.data:
         raise UserError("Using body in GET-method is restricted.")
 
-    # Get language preference from query parameter, default to English
-    lang_arg = request.args.get("lang", "en")
-    language = validate_language(lang_arg)
-    if language is None:
-        raise UserError(f"Unsupported language: {lang_arg}")
+    unknown_args = set(request.args.keys()) - {"lang"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    # Get language preference from query parameter
+    lang_arg = request.args.get("lang")
+    if lang_arg:
+        if lang_arg not in SUPPORTED_LANGUAGES:
+            raise UserError(f"Unsupported language: {lang_arg}")
 
     # Get all venue types from database
     venue_types = VenueType.objects()
     # Format response data using the requested language
-    venue_types_data = [venue_type.to_response_dict(language) for venue_type in venue_types]
+    venue_types_data = [venue_type.to_response_dict(lang_arg) for venue_type in venue_types]
 
     return jsonify({
         "status": "success",
         "data": venue_types_data
+    }), 200
+
+
+def get_existing_venue_type(slug):
+    """
+
+    """
+    if request.data:
+        raise UserError("Using body in GET-method is restricted.")
+
+    unknown_args = set(request.args.keys()) - {"lang"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    # Get language preference from query parameter
+    lang_arg = request.args.get("lang")
+    if lang_arg:
+        if lang_arg not in SUPPORTED_LANGUAGES:
+            raise UserError(f"Unsupported language: {lang_arg}")
+
+    # Get all venue types from database
+    venue_type = VenueType.objects(slug=slug).first()
+    # Format response data using the requested language
+    venue_type_data = venue_type.to_response_dict(lang_arg)
+
+    return jsonify({
+        "status": "success",
+        "data": venue_type_data
     }), 200
 
 

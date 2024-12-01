@@ -1,6 +1,5 @@
 from flask import request, jsonify
 from slugify import slugify
-
 from backend.src.models.city import City
 from backend.src.models.venue import Venue
 from backend.src.models.venue_type import VenueType
@@ -11,8 +10,9 @@ from backend.src.utils.exceptions import UserError
 from backend.src.utils.file_utils import validate_image, save_venue_image
 from backend.src.utils.language_utils import validate_language
 from backend.src.utils.constants import ALLOWED_VENUE_BODY_PARAMS, OPTIONAL_VENUE_BODY_PARAMS, \
-    STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS
+    STRICTLY_REQUIRED_VENUE_BODY_PARAMS
 from backend.src.utils.pre_mongo_validators import validate_venue_data
+from concurrent.futures import ThreadPoolExecutor
 
 
 def get_all_venues():
@@ -31,10 +31,6 @@ def get_all_venues():
     if request.data:
         raise UserError("Using body in GET-method is restricted.")
 
-    unknown_args = set(request.args.keys()) - ALLOWED_VENUE_GET_ALL_ARGS
-    if unknown_args:
-        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
-
     # Get language preference from query parameter, default to English
     lang_arg = request.args.get("lang", "en")
     language = validate_language(lang_arg)
@@ -45,7 +41,7 @@ def get_all_venues():
     is_active_arg = request.args.get("is_active")
 
     # Get all venues from database
-    match is_active_arg.lower():
+    match is_active_arg:
         case "true":
             venues = Venue.objects(is_active=True)
         case "false":
@@ -65,39 +61,6 @@ def get_all_venues():
         "status": "success",
         "data": venues_data,
         "count": len(venues_data)
-    }), 200
-
-
-def get_existing_venue(slug):
-    """
-    Get list of all venues
-
-    Query Parameters:
-        - lang (str, optional): Language for venues (en, ru, he). Defaults to 'en'
-
-    Returns:
-        JSON response with:
-        - status: success/error
-        - data: list of venues or error message
-        - count: total number of cities (only if successful)
-    """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
-
-    if request.args:
-        raise UserError("Arguments are restricted fot this endpoint.")
-
-    venue = Venue.objects(slug=slug).first()
-
-    if not venue:
-        raise UserError(f"Venue with slug {slug} not found.", 404)
-
-    # format response
-    venue_data = venue.to_response_dict()
-
-    return jsonify({
-        "status": "success",
-        "data": venue_data
     }), 200
 
 
@@ -144,9 +107,15 @@ def create_new_venue():
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    for param in STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS:
+    for param in STRICTLY_REQUIRED_VENUE_BODY_PARAMS:
         if param not in data:
             raise UserError(f"Body parameter '{param}' is missing.")
+        # elif not isinstance(data[param], str):
+        #     raise UserError(f"Body parameter {param} must be a string.")
+
+    # for param in OPTIONAL_VENUE_BODY_PARAMS:
+    #     if param in data and not isinstance(data["website"], str):
+    #         raise UserError(f"Body parameter {param} must be a string.")
 
     if 12 < len(data) < 5:
         raise UserError("Incorrect number of parameters in body.")
@@ -158,14 +127,14 @@ def create_new_venue():
         raise UserError(f"Venue type '{data['venue_type_en']}' not found", 404)
 
     if "name_en" in data:
-        source_lang = "en"
-        source_text = data["name_en"]
+        name_source_lang = "en"
+        name_source_text = data["name_en"]
     elif "name_he" in data:
-        source_lang = "iw"  # Google Translate uses 'iw'
-        source_text = data["name_he"]
+        name_source_lang = "iw"  # Google Translate uses 'iw'
+        name_source_text = data["name_he"]
     elif "name_ru" in data:
-        source_lang = "ru"
-        source_text = data["name_ru"]
+        name_source_lang = "ru"
+        name_source_text = data["name_ru"]
     else:
         raise UserError("At least one 'name' in any language must be provided")
 
@@ -173,25 +142,15 @@ def create_new_venue():
     name_ru = data.get("name_ru")
     name_he = data.get("name_he")
 
-    if not name_en:
-        target_lang = "en"
-        name_en = translate_with_google(source_text, source_lang, target_lang)
-    if not name_he:
-        target_lang = "iw"
-        name_he = translate_with_google(source_text, source_lang, target_lang)
-    if not name_ru:
-        target_lang = "ru"
-        name_ru = translate_with_google(source_text, source_lang, target_lang)
-
     if "description_en" in data:
-        source_lang = "en"
-        source_text = data["description_en"]
+        descr_source_lang = "en"
+        descr_source_text = data["description_en"]
     elif "description_he" in data:
-        source_lang = "iw"  # Google Translate uses 'iw'
-        source_text = data["description_he"]
+        descr_source_lang = "iw"  # Google Translate uses 'iw'
+        descr_source_text = data["description_he"]
     elif "description_ru" in data:
-        source_lang = "ru"
-        source_text = data["description_ru"]
+        descr_source_lang = "ru"
+        descr_source_text = data["description_ru"]
     else:
         raise UserError("At least one 'description' in any language must be provided")
 
@@ -199,73 +158,58 @@ def create_new_venue():
     description_ru = data.get("description_ru")
     description_he = data.get("description_he")
 
-    if not description_en:
-        target_lang = "en"
-        description_en = translate_with_google(source_text, source_lang, target_lang)
-    if not description_he:
-        target_lang = "iw"
-        description_he = translate_with_google(source_text, source_lang, target_lang)
-    if not description_ru:
-        target_lang = "ru"
-        description_ru = translate_with_google(source_text, source_lang, target_lang)
-
-    # if "name_en" in data:
-    #     source_lang = "en-GB"
-    #     source_text = data["name_en"]
-    # elif "name_he" in data:
-    #     source_lang = "he-IL"
-    #     source_text = data["name_he"]
-    # elif "name_ru" in data:
-    #     source_lang = "ru-RU"
-    #     source_text = data["name_ru"]
-    # else:
-    #     raise UserError("At least one 'name' in any language must be provided")
-    #
-    # name_en = data.get("name_en")
-    # name_ru = data.get("name_ru")
-    # name_he = data.get("name_he")
-    #
-    # if not name_en:
-    #     name_en = translate_with_mymemory(source_text, source_lang, "en-GB")
-    # if not name_he:
-    #     name_he = translate_with_mymemory(source_text, source_lang, "he-IL")
-    # if not name_ru:
-    #     name_ru = translate_with_mymemory(source_text, source_lang, "ru-RU")
-    #
-    # if "description_en" in data:
-    #     source_lang = "en-GB"
-    #     source_text = data["description_en"]
-    # elif "description_he" in data:
-    #     source_lang = "he-IL"
-    #     source_text = data["description_he"]
-    # elif "description_ru" in data:
-    #     source_lang = "ru-RU"
-    #     source_text = data["description_ru"]
-    # else:
-    #     raise UserError("At least one 'description' in any language must be provided")
-    #
-    # description_en = data.get("description_en")
-    # description_ru = data.get("description_ru")
-    # description_he = data.get("description_he")
-    #
-    # if not description_en:
-    #     description_en = translate_with_mymemory(source_text, source_lang, "en-GB")
-    # if not description_he:
-    #     description_he = translate_with_mymemory(source_text, source_lang, "he-IL")
-    # if not description_ru:
-    #     description_ru = translate_with_mymemory(source_text, source_lang, "ru-RU")
-
     # Check if city exists, if not - try to add it
     city = City.objects(name_en=data["city_en"]).first()
 
+    # -----
+    new_city_names = None
+    with ThreadPoolExecutor() as executor:
+        # Запускаем и переводы, и геокодинг
+        if not name_en:
+            name_en_future = executor.submit(translate_with_google, name_source_text, name_source_lang, "en")
+        if not name_ru:
+            name_ru_future = executor.submit(translate_with_google, name_source_text, name_source_lang, "ru")
+        if not name_he:
+            name_he_future = executor.submit(translate_with_google, name_source_text, name_source_lang, "iw")
+
+        if not description_en:
+            description_en_future = executor.submit(translate_with_google, descr_source_text, descr_source_lang, "en")
+        if not description_ru:
+            description_ru_future = executor.submit(translate_with_google, descr_source_text, descr_source_lang, "ru")
+        if not description_he:
+            description_he_future = executor.submit(translate_with_google, descr_source_text, descr_source_lang, "iw")
+
+        if not city:
+            new_city_names_future = executor.submit(validate_and_get_names, data["city_en"])
+
+        # Получаем результаты переводов
+        if not name_en:
+            name_en = name_en_future.result()
+        if not name_ru:
+            name_ru = name_ru_future.result()
+        if not name_he:
+            name_he = name_he_future.result()
+
+        # --
+        if not description_en:
+            description_en = description_en_future.result()
+        if not description_ru:
+            description_ru = description_ru_future.result()
+        if not description_he:
+            description_he = description_he_future.result()
+
+        # --
+        if not city:
+            new_city_names = new_city_names_future.result()
+
+
     # If city doesn't exist, add it using GeoNames
-    if not city:
-        names = validate_and_get_names(data["city_en"])
+    if new_city_names:
         city = City(
-            name_en=names["en"],
-            name_ru=names["ru"],
-            name_he=names["he"],
-            slug=slugify(names["en"])
+            name_en=new_city_names["en"],
+            name_ru=new_city_names["ru"],
+            name_he=new_city_names["he"],
+            slug=slugify(new_city_names["en"])
         )
         city.save()
 
@@ -288,7 +232,6 @@ def create_new_venue():
         location=address_data["location"],
         phone=data.get("phone"),
         website=data.get("website"),
-        email=data.get("email"),
         slug=slugify(name_en)
     )
 
@@ -303,11 +246,3 @@ def create_new_venue():
         'message': 'Venue created successfully',
         "data": venue.to_response_dict()
     }), 201
-
-
-def full_update_existing_venue(slug):
-    """
-    full update venue
-
-    """
-    return

@@ -1,6 +1,7 @@
 from flask import Blueprint
 from backend.src.controllers.venue_types_controller import get_all_venue_types, create_new_venue_type, \
-    full_update_existing_venue_type, part_update_existing_venue_type, delete_existing_venue_type
+    full_update_existing_venue_type, part_update_existing_venue_type, delete_existing_venue_type, \
+    get_existing_venue_type
 
 # Create Blueprint for venue types
 venue_types_bp = Blueprint("venue_types", __name__, url_prefix="/venue_types")
@@ -10,6 +11,12 @@ venue_types_bp = Blueprint("venue_types", __name__, url_prefix="/venue_types")
 def get_venue_types():
     """Handle GET request for retrieving all venue types"""
     return get_all_venue_types()
+
+
+@venue_types_bp.route("/<slug>", methods=["GET"])
+def get_venue_type(slug):
+    """Handle GET request for retrieving all venue types"""
+    return get_existing_venue_type(slug)
 
 
 @venue_types_bp.route("/", methods=["POST"])
