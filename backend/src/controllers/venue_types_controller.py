@@ -1,15 +1,15 @@
 from flask import request, jsonify
 from slugify import slugify
+from backend.src.models.venue import Venue
+from backend.src.models.venue_type import VenueType
 from backend.src.services.translation_service import translate_with_google
-from backend.src.utils.constants import ALLOWED_EVENT_TYPE_BODY_PARAMS
+from backend.src.utils.constants import ALLOWED_VENUE_TYPE_BODY_PARAMS
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.language_utils import validate_language
-from backend.src.models.event_type import EventType
-from backend.src.models.event import Event
-from backend.src.utils.pre_mongo_validators import validate_event_type_data
+from backend.src.utils.pre_mongo_validators import validate_venue_type_data
 
 
-def get_all_event_types():
+def get_all_venue_types():
     """
     Get list of all event types.
 
@@ -41,20 +41,20 @@ def get_all_event_types():
     if language is None:
         raise UserError(f"Unsupported language: {lang_arg}")
 
-    # Get all event types from database
-    event_types = EventType.objects()
+    # Get all venue types from database
+    venue_types = VenueType.objects()
     # Format response data using the requested language
-    event_types_data = [event_type.to_response_dict(language) for event_type in event_types]
+    venue_types_data = [venue_type.to_response_dict(language) for venue_type in venue_types]
 
     return jsonify({
         "status": "success",
-        "data": event_types_data
+        "data": venue_types_data
     }), 200
 
 
-def create_new_event_type():
+def create_new_venue_type():
     """
-    Create new event type with automatic translation of missing names.
+    Create new venue type with automatic translation of missing names.
 
     Request Body:
         JSON object with at least one name field (required):
@@ -96,14 +96,14 @@ def create_new_event_type():
     if not data:
         raise UserError("Body parameters are missing.")
 
-    unknown_params = set(data.keys()) - ALLOWED_EVENT_TYPE_BODY_PARAMS
+    unknown_params = set(data.keys()) - ALLOWED_VENUE_TYPE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
     if len(data) > 3:
         raise UserError("Incorrect number of parameters in body.")
 
-    validate_event_type_data(data)  # pre-mongo validation
+    validate_venue_type_data(data)  # pre-mongo validation
 
     if "name_en" in data:
         source_lang = "en"
@@ -131,23 +131,23 @@ def create_new_event_type():
         target_lang = "ru"
         name_ru = translate_with_google(source_text, source_lang, target_lang)
 
-    event_type = EventType(name_en=name_en,
+    venue_type = VenueType(name_en=name_en,
                            name_ru=name_ru,
                            name_he=name_he,
                            slug=slugify(name_en)
                            )
-    event_type.save()
+    venue_type.save()
 
     return jsonify({
         "status": "success",
-        "message": "Event type created successfully",
-        "data": event_type.to_response_dict()
+        "message": "Venue type created successfully",
+        "data": venue_type.to_response_dict()
     }), 201
 
 
-def full_update_existing_event_type(slug):
+def full_update_existing_venue_type(slug):
     """
-    Update existing event type
+    Update existing venue type
 
     Query Body Parameters:
         - name_en (str, required): Name in English
@@ -157,7 +157,7 @@ def full_update_existing_event_type(slug):
     Returns:
         JSON response with:
         - status: success/error
-        - message: event type updated
+        - message: venue type updated
     """
     if not request.is_json:
         raise UserError("Content-Type must be application/json.", 415)
@@ -166,37 +166,37 @@ def full_update_existing_event_type(slug):
     if not data:
         raise UserError("Body parameters are missing.")
 
-    # Find existing event type
-    event_type = EventType.objects(slug=slug).first()
-    if not event_type:
-        raise UserError(f"Event type with slug '{slug}' not found", 404)
+    # Find existing venue type
+    venue_type = VenueType.objects(slug=slug).first()
+    if not venue_type:
+        raise UserError(f"Venue type with slug '{slug}' not found", 404)
 
-    unknown_params = set(data.keys()) - ALLOWED_EVENT_TYPE_BODY_PARAMS
+    unknown_params = set(data.keys()) - ALLOWED_VENUE_TYPE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
     if len(data) != 3:
         raise UserError("Incorrect number of parameters in body.")
 
-    validate_event_type_data(data)  # pre-mongo validation
+    validate_venue_type_data(data)  # pre-mongo validation
 
-    event_type.name_en = data["name_en"]
-    event_type.name_he = data["name_he"]
-    event_type.name_ru = data["name_ru"]
-    event_type.slug = slugify(data["name_en"])
+    venue_type.name_en = data["name_en"]
+    venue_type.name_he = data["name_he"]
+    venue_type.name_ru = data["name_ru"]
+    venue_type.slug = slugify(data["name_en"])
 
-    event_type.save()
+    venue_type.save()
 
     return jsonify({
         "status": "success",
-        "message": "Event type fully updated successfully.",
-        "data": event_type.to_response_dict()
+        "message": "Venue type fully updated successfully.",
+        "data": venue_type.to_response_dict()
     }), 200
 
 
-def part_update_existing_event_type(slug):
+def part_update_existing_venue_type(slug):
     """
-    Partial update existing event type
+    Partial update existing venue type
 
     Query Body Parameters:
         - name_en (str, optional): Name in English
@@ -206,7 +206,7 @@ def part_update_existing_event_type(slug):
     Returns:
         JSON response with:
         - status: success/error
-        - message: event type updated
+        - message: venue type updated
     """
     if not request.is_json:
         raise UserError("Content-Type must be application/json.", 415)
@@ -215,41 +215,41 @@ def part_update_existing_event_type(slug):
     if not data:
         raise UserError("Body parameters are missing.")
 
-    # Find existing event type
-    event_type = EventType.objects(slug=slug).first()
-    if not event_type:
-        raise UserError(f"Event type with slug '{slug}' not found", 404)
+    # Find existing venue type
+    venue_type = VenueType.objects(slug=slug).first()
+    if not venue_type:
+        raise UserError(f"Venue type with slug '{slug}' not found", 404)
 
-    unknown_params = set(data.keys()) - ALLOWED_EVENT_TYPE_BODY_PARAMS
+    unknown_params = set(data.keys()) - ALLOWED_VENUE_TYPE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
     if len(data) > 3:
         raise UserError("Incorrect number of parameters in body.")
 
-    validate_event_type_data(data)  # pre-mongo validation
+    validate_venue_type_data(data)  # pre-mongo validation
 
     # Track changes
     updated_fields = []
     unchanged_fields = []
 
     for param in data:
-        current_value = getattr(event_type, param)
+        current_value = getattr(venue_type, param)
         new_value = data[param]
 
         if current_value != new_value:
-            setattr(event_type, param, new_value)
+            setattr(venue_type, param, new_value)
             updated_fields.append(param)
 
             # Update slug if English name changes
             if param == "name_en":
-                event_type.slug = slugify(new_value)
+                venue_type.slug = slugify(new_value)
                 updated_fields.append("slug")
         else:
             unchanged_fields.append(param)
 
     if updated_fields:
-        event_type.save()
+        venue_type.save()
         message = f"Updated fields: {', '.join(updated_fields)}"
         if unchanged_fields:
             message += f". Unchanged fields: {', '.join(unchanged_fields)}"
@@ -259,39 +259,39 @@ def part_update_existing_event_type(slug):
     return jsonify({
         "status": "success",
         "message": message,
-        "data": event_type.to_response_dict()
+        "data": venue_type.to_response_dict()
     }), 200
 
 
-def delete_existing_event_type(slug):
+def delete_existing_venue_type(slug):
     """
-    Delete existing event type if there are no events with this type
+    Delete existing venue type if there are no venues with this type
 
     Returns:
         JSON response with:
         - status: error
-        - message: event type updated
+        - message: venue type updated
 
         204
     """
     if request.data:
         raise UserError("Using body in DELETE-method is restricted.")
 
-    # Find existing event type
-    event_type = EventType.objects(slug=slug).first()
-    if not event_type:
-        raise UserError(f"Event type with slug '{slug}' not found", 404)
+    # Find existing venue type
+    venue_type = VenueType.objects(slug=slug).first()
+    if not venue_type:
+        raise UserError(f"Venue type with slug '{slug}' not found", 404)
 
-    associated_events = Event.objects(event_type=event_type).count()
+    associated_venues = Venue.objects(venue_type=venue_type).count()
 
-    if associated_events > 0:
+    if associated_venues > 0:
         raise UserError(
-            "Cannot delete this event type. Please delete all associated events first.",
+            "Cannot delete this venue type. Please delete all associated venues first.",
             409
         )
 
-    # If no associated events, delete the event type
-    event_type.delete()
+    # If no associated venues, delete the venue type
+    venue_type.delete()
 
     # Return 204 No Content for successful deletion
     return '', 204

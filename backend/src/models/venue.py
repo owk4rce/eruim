@@ -59,111 +59,76 @@ class Venue(Document):
         required=True,
         min_length=3,
         max_length=100,
-        regex=r'^[а-яА-ЯёЁ\s-]+$',
-        error_messages={
-            'required': 'Russian venue name is required',
-            'min_length': 'Russian venue name must be at least 3 characters long',
-            'max_length': 'Russian venue name cannot be longer than 100 characters',
-            'regex': 'Only Russian letters, spaces and hyphens are allowed'
-        }
+        regex=r'^[а-яА-ЯёЁ\s\-]+$'
     )
 
     name_en = StringField(
         required=True,
         min_length=3,
         max_length=100,
-        regex=r'^[a-zA-Z\s-]+$',
-        error_messages={
-            'required': 'English venue name is required',
-            'min_length': 'English venue name must be at least 3 characters long',
-            'max_length': 'English venue name cannot be longer than 100 characters',
-            'regex': 'Only English letters, spaces and hyphens are allowed'
-        }
+        regex=r'^[a-zA-Z\s\-]+$'
     )
 
     name_he = StringField(
         required=True,
         min_length=3,
         max_length=100,
-        regex=r'^[\u0590-\u05FF\s-]+$',
-        error_messages={
-            'required': 'Hebrew venue name is required',
-            'min_length': 'Hebrew venue name must be at least 3 characters long',
-            'max_length': 'Hebrew venue name cannot be longer than 100 characters',
-            'regex': 'Only Hebrew letters, spaces and hyphens are allowed'
-        }
+        regex=r'^[\u0590-\u05FF\s\-]+$'
     )
 
     address_ru = StringField(
         required=True,
         min_length=5,
         max_length=200,
-        error_messages={
-            'required': 'Russian address is required',
-            'min_length': 'Russian address must be at least 5 characters long',
-            'max_length': 'Russian address cannot be longer than 200 characters'
-        }
+        regex=r'^[а-яА-ЯёЁ\s\d,./\-]+$'
     )
 
     address_en = StringField(
         required=True,
         min_length=5,
         max_length=200,
-        error_messages={
-            'required': 'English address is required',
-            'min_length': 'English address must be at least 5 characters long',
-            'max_length': 'English address cannot be longer than 200 characters'
-        }
+        regex=r'^[a-zA-Z\s\d,./\-]+$'
     )
 
     address_he = StringField(
         required=True,
         min_length=5,
         max_length=200,
-        error_messages={
-            'required': 'Hebrew address is required',
-            'min_length': 'Hebrew address must be at least 5 characters long',
-            'max_length': 'Hebrew address cannot be longer than 200 characters'
-        }
+        regex=r'^[\u0590-\u05FF\s\d,./\-]+$'
     )
 
     description_ru = StringField(
         required=True,
         min_length=20,
         max_length=1000,
-        error_messages={
-            'required': 'Russian description is required',
-            'min_length': 'Russian description must be at least 20 characters long',
-            'max_length': 'Russian description cannot be longer than 1000 characters'
-        }
+        regex=r'^[а-яА-ЯёЁ\s\d,./\-:;\'\"!?()\[\]]+$'
     )
 
     description_en = StringField(
         required=True,
         min_length=20,
         max_length=1000,
-        error_messages={
-            'required': 'English description is required',
-            'min_length': 'English description must be at least 20 characters long',
-            'max_length': 'English description cannot be longer than 1000 characters'
-        }
+        regex=r'^[a-zA-Z\s\d,./\-:;\'\"!?()\[\]]+$'
     )
 
     description_he = StringField(
         required=True,
         min_length=20,
         max_length=1000,
+        regex=r'^[\u0590-\u05FF\s\d,./\-:;\'\"!?()\[\]]+$'
+    )
+
+    venue_type = ReferenceField(
+        'VenueType',
+        required=True,
         error_messages={
-            'required': 'Hebrew description is required',
-            'min_length': 'Hebrew description must be at least 20 characters long',
-            'max_length': 'Hebrew description cannot be longer than 1000 characters'
+            'required': 'Venue type reference is required'
         }
     )
 
     city = ReferenceField(
         'City',
         required=True,
-        index=True,
         error_messages={
             'required': 'City reference is required'
         }
@@ -219,8 +184,13 @@ class Venue(Document):
     )
 
     meta = {
-        'collection': 'venues',     # MongoDB collection name
-        "indexes": ["name_ru", "name_en", "name_he", "slug"]    # Database indexes
+        'collection': 'venues',  # MongoDB collection name
+        "indexes": ["name_ru",
+                    "name_en",
+                    "name_he",
+                    "venue_type",
+                    "city",
+                    "slug"]  # Database indexes
     }
 
     def get_name(self, lang="en"):
@@ -258,3 +228,42 @@ class Venue(Document):
                str: Venue description in requested language.
         """
         return getattr(self, f"description_{lang}")
+
+    def to_response_dict(self, lang=None):
+        """Convert venue to API response format"""
+        if not lang:
+            return {
+                "name_ru": self.name_ru,
+                "name_en": self.name_en,
+                "name_he": self.name_he,
+                "address_en": self.address_en,
+                "address_he": self.address_he,
+                "address_ru": self.address_ru,
+                "description_en": self.description_en,
+                "description_he": self.description_he,
+                "description_ru": self.description_ru,
+                "venue_type": self.venue_type.to_response_dict(),
+                "city": self.city.to_response_dict(),
+                "location": self.location,
+                "website": self.website,
+                "phone": self.phone,
+                "email": self.email,
+                "is_active": self.is_active,
+                "image_path": self.image_path,
+                "slug": self.slug
+            }
+        else:
+            return {
+                "name": self.get_name(lang),
+                "address": self.get_address(lang),
+                "description": self.get_description(lang),
+                "venue_type": self.venue_type.to_response_dict(lang),
+                "city": self.city.to_response_dict(lang),
+                "location": self.location,
+                "website": self.website,
+                "phone": self.phone,
+                "email": self.email,
+                "is_active": self.is_active,
+                "image_path": self.image_path,
+                "slug": self.slug
+            }

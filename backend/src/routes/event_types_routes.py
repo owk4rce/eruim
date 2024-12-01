@@ -32,5 +32,5 @@ def part_update_event_type(slug):
 
 @event_types_bp.route("/<slug>", methods=["DELETE"])
 def delete_event_type(slug):
-    """Handle PUT request for full updating one event type"""
+    """Handle DELETE request for deleting one event type"""
     return delete_existing_event_type(slug)

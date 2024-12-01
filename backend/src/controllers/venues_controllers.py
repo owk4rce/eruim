@@ -3,6 +3,7 @@ from slugify import slugify
 
 from backend.src.models.city import City
 from backend.src.models.venue import Venue
+from backend.src.models.venue_type import VenueType
 from backend.src.services.geonames_service import validate_and_get_names
 from backend.src.services.here_service import validate_and_get_addr_and_location
 from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
@@ -11,6 +12,7 @@ from backend.src.utils.file_utils import validate_image, save_venue_image
 from backend.src.utils.language_utils import validate_language
 from backend.src.utils.constants import ALLOWED_VENUE_BODY_PARAMS, OPTIONAL_VENUE_BODY_PARAMS, \
     STRICTLY_REQUIRED_VENUE_BODY_PARAMS
+from backend.src.utils.pre_mongo_validators import validate_venue_data
 
 
 def get_all_venues():
@@ -52,27 +54,13 @@ def get_all_venues():
                 "message": "Parameter 'is_active' must be true or false"
             }), 400
 
-    # Format response data using the requested language
-    venues_data = [{
-        "name": venue.get_name(language),
-        "address": venue.get_address(language),
-        "description": venue.get_description(language),
-        "city": {
-            "name": venue.city.get_name(language),
-            "slug": venue.city.slug
-        },
-        "location": venue.location,
-        "website": venue.website,
-        "phone": venue.phone,
-        "email": venue.email,
-        "is_active": venue.is_active,
-        "slug": venue.slug
-    } for venue in venues]
+    # format response
+    venues_data = [venue.to_response_dict(language) for venue in venues]
 
     return jsonify({
-        'status': 'success',
-        'data': venues_data,
-        'count': len(venues_data)
+        "status": "success",
+        "data": venues_data,
+        "count": len(venues_data)
     }), 200
 
 
@@ -105,7 +93,7 @@ def create_new_venue():
         if not data:
             raise UserError("Form data is empty")
 
-        if 'image' in request.files:
+        if "image" in request.files:
             file = request.files["image"]
             validate_image(file)
     elif not request.is_json:
@@ -122,15 +110,21 @@ def create_new_venue():
     for param in STRICTLY_REQUIRED_VENUE_BODY_PARAMS:
         if param not in data:
             raise UserError(f"Body parameter '{param}' is missing.")
-        elif not isinstance(data[param], str):
-            raise UserError(f"Body parameter {param} must be a string.")
+        # elif not isinstance(data[param], str):
+        #     raise UserError(f"Body parameter {param} must be a string.")
 
-    for param in OPTIONAL_VENUE_BODY_PARAMS:
-        if param in data and not isinstance(data["website"], str):
-            raise UserError(f"Body parameter {param} must be a string.")
+    # for param in OPTIONAL_VENUE_BODY_PARAMS:
+    #     if param in data and not isinstance(data["website"], str):
+    #         raise UserError(f"Body parameter {param} must be a string.")
 
-    if 11 < len(data) < 4:
+    if 12 < len(data) < 5:
         raise UserError("Incorrect number of parameters in body.")
+
+    validate_venue_data(data)
+
+    venue_type = VenueType.objects(name_en=data["venue_type_en"].lower()).first()
+    if not venue_type:
+        raise UserError(f"Venue type '{data['venue_type_en']}' not found", 404)
 
     if "name_en" in data:
         source_lang = "en"
@@ -258,6 +252,7 @@ def create_new_venue():
         description_en=description_en,
         description_ru=description_ru,
         description_he=description_he,
+        venue_type=venue_type,
         city=city,
         location=address_data["location"],
         phone=data.get("phone"),
@@ -273,5 +268,6 @@ def create_new_venue():
 
     return jsonify({
         'status': 'success',
-        'message': 'Venue created successfully'
+        'message': 'Venue created successfully',
+        "data": venue.to_response_dict()
     }), 201

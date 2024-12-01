@@ -6,7 +6,6 @@ from backend.src.utils.exceptions import UserError, ConfigurationError
 
 def register_error_handlers(app):
     """Register error handlers for the Flask app"""
-
     @app.errorhandler(BadRequest)
     def handle_bad_request(error):
         return jsonify({
