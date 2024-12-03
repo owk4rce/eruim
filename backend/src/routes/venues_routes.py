@@ -30,6 +30,7 @@ def full_update_venue(slug):
 def part_update_venue(slug):
     return part_update_existing_venue(slug)
 
+
 @venues_bp.route("/<slug>", methods=["DELETE"])
 def delete_venue(slug):
     """Handle DELETE request for deleting one venue"""

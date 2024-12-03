@@ -1,7 +1,42 @@
 import re
 from backend.src.utils.constants import CITY_NAME_EN_PATTERN, VENUE_PATTERNS, \
-    VENUE_TYPE_PATTERNS, EVENT_TYPE_PATTERNS
+    VENUE_TYPE_PATTERNS, EVENT_TYPE_PATTERNS, USER_PATTERNS
 from backend.src.utils.exceptions import UserError, ConfigurationError
+
+
+def validate_user_data(data):
+    """Validate body parameters for user"""
+    for param, value in data.items():
+        if param == "is_active":
+            if not isinstance(data["is_active"], bool):
+                raise UserError("Parameter 'is_active' must be boolean")
+            continue
+
+        if not isinstance(value, str):
+            raise UserError(f"Parameter '{param}' must be a string.")
+
+        # Validate only fields that have patterns
+        if param in USER_PATTERNS:
+            if not re.match(USER_PATTERNS[param], value):
+                match param:
+                    case 'email':
+                        raise UserError("Invalid email format")
+                    case 'password':
+                        raise UserError(
+                            'Password requirements: '
+                            'At least 8 characters long. '
+                            'Only English letters (a-z, A-Z). '
+                            'At least one uppercase letter. '
+                            'At least one lowercase letter. '
+                            'At least one number. '
+                            'At least one special character (@$!%*?&).'
+                        )
+                    case 'role':
+                        raise UserError("Invalid role. Must be one of: admin, manager, user")
+                    case 'default_lang':
+                        raise UserError("Invalid language. Must be one of: en, ru, he")
+                    case _:
+                        raise ConfigurationError(f"Pattern exists for '{param}' but no error message defined")
 
 
 def validate_event_type_data(data):

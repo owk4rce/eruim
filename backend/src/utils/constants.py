@@ -86,5 +86,17 @@ VENUE_TYPE_PATTERNS = {
 
 CITY_NAME_EN_PATTERN = r'^[a-zA-Z\s-]{3,50}$'
 
+# User
+
+ALLOWED_USER_BODY_PARAMS = {'email', 'password', 'role', "is_active", "default_lang"}
+
+REQUIRED_USER_BODY_PARAMS = {'email', 'password', 'role'}
+
+USER_PATTERNS = {
+    'email': r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    'password': r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+    'role': r'^(admin|manager|user)$',
+    'default_lang': r'^(en|ru|he)$'
+}
 
 

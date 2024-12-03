@@ -4,7 +4,7 @@ from backend.src.models.city import City
 from backend.src.models.venue import Venue
 from backend.src.models.venue_type import VenueType
 from backend.src.services.geonames_service import validate_and_get_names
-from backend.src.services.here_service import validate_and_get_addr_and_location, validate_and_get_location
+from backend.src.services.here_service import validate_and_get_location
 from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.file_utils import validate_image, save_venue_image

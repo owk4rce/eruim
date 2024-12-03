@@ -153,12 +153,7 @@ class Venue(Document):
     slug = StringField(
         required=True,
         unique=True,
-        max_length=100,
-        error_messages={
-            'required': 'Slug is required',
-            'unique': 'This slug is already in use',
-            'max_length': 'Slug cannot be longer than 100 characters'
-        }
+        max_length=100
     )
 
     meta = {
