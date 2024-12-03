@@ -11,11 +11,19 @@ ALLOWED_VENUE_GET_ALL_ARGS = {
     "lang", "is_active"
 }
 
-ALLOWED_VENUE_BODY_PARAMS = {
+ALLOWED_VENUE_CREATE_BODY_PARAMS = {
     "name_en", "name_ru", "name_he",
-    "address_en", "address_ru", "address_he",
+    "address_en",
     "description_en", "description_ru", "description_he",
     "venue_type_en", "city_en", "website", "phone", "email"
+}
+
+ALLOWED_VENUE_UPDATE_BODY_PARAMS = {
+    "name_en", "name_ru", "name_he",
+    "address_en", "address_he", "address_ru",
+    "description_en", "description_ru", "description_he",
+    "venue_type_en", "city_en", "website", "phone", "email",
+    "is_active"
 }
 
 STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS = [
@@ -38,9 +46,9 @@ VENUE_PATTERNS = {
     'address_he': r'^[\u0590-\u05FF\s\d,./\-]{5,200}$',
 
     # Descriptions: extended punctuation set (20-1000 chars)
-    'description_en': r'^[a-zA-Z\s\d,./\-:;\'\"!?()\[\]]{20,1000}$',
-    'description_ru': r'^[а-яА-ЯёЁ\s\d,./\-:;\'\"!?()\[\]]{20,1000}$',
-    'description_he': r'^[\u0590-\u05FF\s\d,./\-:;\'\"!?()\[\]]{20,1000}$',
+    'description_en': r'^[a-zA-Z\s\d,./\-–—:;\'\"«»!?()\[\]]{20,1000}$',
+    'description_ru': r'^[а-яА-ЯёЁ\s\d,./\-–—:;\'\"«»„""!?()\[\]]{20,1000}$',
+    'description_he': r'^[\u0590-\u05FF\s\d,./\-–—:;\'\"«»!?()\[\]]{20,1000}$',
 
     # References to other entities (English names only)
     'city_en': r'^[a-zA-Z\s\-]{2,30}$',

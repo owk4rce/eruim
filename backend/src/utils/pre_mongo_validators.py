@@ -59,6 +59,11 @@ def validate_city_data(data):
 def validate_venue_data(data):
     """Validate body parameters for venue"""
     for param, value in data.items():
+        if param == "is_active":
+            if not isinstance(data["is_active"], bool):
+                raise UserError("Parameter 'is_active' must be boolean")
+            continue
+
         if not isinstance(value, str):
             raise UserError(f"Parameter '{param}' must be a string.")
 

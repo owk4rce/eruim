@@ -12,26 +12,7 @@ from backend.src.utils.pre_mongo_validators import validate_venue_type_data
 
 def get_all_venue_types():
     """
-    Get list of all event types.
 
-    Query Parameters:
-        - lang (str, optional): Language code for event type names (en/ru/he).
-                               Defaults to 'en'
-
-    Returns:
-        tuple: (JSON response, status code)
-            - response format:
-                {
-                    "status": "success",
-                    "data": [
-                        {
-                            "name": str,
-                            "slug": str
-                        },
-                        ...
-                    ]
-                }
-            - status code: 200 for success, 400 for validation errors
     """
     if request.data:
         raise UserError("Using body in GET-method is restricted.")
@@ -74,8 +55,12 @@ def get_existing_venue_type(slug):
         if lang_arg not in SUPPORTED_LANGUAGES:
             raise UserError(f"Unsupported language: {lang_arg}")
 
-    # Get all venue types from database
+    # Get one venue type from database
     venue_type = VenueType.objects(slug=slug).first()
+
+    if not venue_type:
+        raise UserError(f"Venue type with slug {slug} not found", 404)
+
     # Format response data using the requested language
     venue_type_data = venue_type.to_response_dict(lang_arg)
 

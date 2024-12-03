@@ -3,6 +3,7 @@ from slugify import slugify
 
 from backend.src.models.venue import Venue
 from backend.src.services.geonames_service import validate_and_get_names
+from backend.src.utils.constants import SUPPORTED_LANGUAGES
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.language_utils import validate_language
 from backend.src.models.city import City
@@ -11,35 +12,62 @@ from backend.src.utils.pre_mongo_validators import validate_city_data
 
 def get_all_cities():
     """
-    Get list of all cities
 
-    Query Parameters:
-        - lang (str, optional): Language for city names (en, ru, he). Defaults to 'en'
-
-    Returns:
-        JSON response with:
-        - status: success/error
-        - data: list of cities or error message
-        - count: total number of cities (only if successful)
     """
     if request.data:
         raise UserError("Using body in GET-method is restricted.")
 
-    # Get language preference from query parameter, default to English
-    lang_arg = request.args.get("lang", "en")
-    language = validate_language(lang_arg)
-    if language is None:
-        raise UserError(f"Unsupported language: {lang_arg}")
+    unknown_args = set(request.args.keys()) - {"lang"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    # Get language preference from query parameter
+    lang_arg = request.args.get("lang")
+    if lang_arg:
+        if lang_arg not in SUPPORTED_LANGUAGES:
+            raise UserError(f"Unsupported language: {lang_arg}")
 
     # Get all cities from database
     cities = City.objects()
     # Format response data using the requested language
-    cities_data = [city.to_response_dict(language) for city in cities]
+    cities_data = [city.to_response_dict(lang_arg) for city in cities]
 
     return jsonify({
         "status": "success",
         "data": cities_data,
         "count": len(cities_data)
+    }), 200
+
+
+def get_existing_city(slug):
+    """
+
+    """
+    if request.data:
+        raise UserError("Using body in GET-method is restricted.")
+
+    unknown_args = set(request.args.keys()) - {"lang"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    # Get language preference from query parameter
+    lang_arg = request.args.get("lang")
+    if lang_arg:
+        if lang_arg not in SUPPORTED_LANGUAGES:
+            raise UserError(f"Unsupported language: {lang_arg}")
+
+    # Get one venue type from database
+    city = City.objects(slug=slug).first()
+
+    if not city:
+        raise UserError(f"City with slug {slug} not found", 404)
+
+    # Format response data using the requested language
+    city_data = city.to_response_dict(lang_arg)
+
+    return jsonify({
+        "status": "success",
+        "data": city_data
     }), 200
 
 
@@ -63,7 +91,7 @@ def create_new_city():
         raise UserError("Body parameters are missing.")
 
     if len(data) != 1 or "name_en" not in data:
-        raise UserError("Body of request must contain only 'name_en' field.")
+        raise UserError("Body of request must contain only 'name_en' parameter.")
 
     validate_city_data(data)
 

@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from slugify import slugify
 from backend.src.services.translation_service import translate_with_google
-from backend.src.utils.constants import ALLOWED_EVENT_TYPE_BODY_PARAMS
+from backend.src.utils.constants import ALLOWED_EVENT_TYPE_BODY_PARAMS, SUPPORTED_LANGUAGES
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.language_utils import validate_language
 from backend.src.models.event_type import EventType
@@ -11,44 +11,61 @@ from backend.src.utils.pre_mongo_validators import validate_event_type_data
 
 def get_all_event_types():
     """
-    Get list of all event types.
 
-    Query Parameters:
-        - lang (str, optional): Language code for event type names (en/ru/he).
-                               Defaults to 'en'
-
-    Returns:
-        tuple: (JSON response, status code)
-            - response format:
-                {
-                    "status": "success",
-                    "data": [
-                        {
-                            "name": str,
-                            "slug": str
-                        },
-                        ...
-                    ]
-                }
-            - status code: 200 for success, 400 for validation errors
     """
     if request.data:
         raise UserError("Using body in GET-method is restricted.")
 
-    # Get language preference from query parameter, default to English
-    lang_arg = request.args.get("lang", "en")
-    language = validate_language(lang_arg)
-    if language is None:
-        raise UserError(f"Unsupported language: {lang_arg}")
+    unknown_args = set(request.args.keys()) - {"lang"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    # Get language preference from query parameter
+    lang_arg = request.args.get("lang")
+    if lang_arg:
+        if lang_arg not in SUPPORTED_LANGUAGES:
+            raise UserError(f"Unsupported language: {lang_arg}")
 
     # Get all event types from database
     event_types = EventType.objects()
     # Format response data using the requested language
-    event_types_data = [event_type.to_response_dict(language) for event_type in event_types]
+    event_types_data = [event_type.to_response_dict(lang_arg) for event_type in event_types]
 
     return jsonify({
         "status": "success",
         "data": event_types_data
+    }), 200
+
+
+def get_existing_event_type(slug):
+    """
+
+    """
+    if request.data:
+        raise UserError("Using body in GET-method is restricted.")
+
+    unknown_args = set(request.args.keys()) - {"lang"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    # Get language preference from query parameter
+    lang_arg = request.args.get("lang")
+    if lang_arg:
+        if lang_arg not in SUPPORTED_LANGUAGES:
+            raise UserError(f"Unsupported language: {lang_arg}")
+
+    # Get one event type from database
+    venue_type = EventType.objects(slug=slug).first()
+
+    if not venue_type:
+        raise UserError(f"Event type with slug {slug} not found", 404)
+
+    # Format response data using the requested language
+    venue_type_data = venue_type.to_response_dict(lang_arg)
+
+    return jsonify({
+        "status": "success",
+        "data": venue_type_data
     }), 200
 
 

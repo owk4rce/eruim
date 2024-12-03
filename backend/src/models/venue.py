@@ -101,63 +101,45 @@ class Venue(Document):
         required=True,
         min_length=20,
         max_length=1000,
-        regex=r'^[а-яА-ЯёЁ\s\d,./\-:;\'\"!?()\[\]]+$'
+        regex=r'^[а-яА-ЯёЁ\s\d,./\-–—:;\'\"«»„“”!?()\[\]]+$'
     )
 
     description_en = StringField(
         required=True,
         min_length=20,
         max_length=1000,
-        regex=r'^[a-zA-Z\s\d,./\-:;\'\"!?()\[\]]+$'
+        regex=r'^[a-zA-Z\s\d,./\-–—:;\'\"«»!?()\[\]]+$'
     )
 
     description_he = StringField(
         required=True,
         min_length=20,
         max_length=1000,
-        regex=r'^[\u0590-\u05FF\s\d,./\-:;\'\"!?()\[\]]+$'
+        regex=r'^[\u0590-\u05FF\s\d,./\-–—:;\'\"«»!?()\[\]]+$'
     )
 
     venue_type = ReferenceField(
         'VenueType',
-        required=True,
-        error_messages={
-            'required': 'Venue type reference is required'
-        }
+        required=True
     )
 
     city = ReferenceField(
         'City',
-        required=True,
-        error_messages={
-            'required': 'City reference is required'
-        }
+        required=True
     )
 
     location = PointField(
-        required=True,
-        error_messages={
-            'required': 'Location coordinates are required'
-        }
+        required=True
     )
 
     website = URLField(
-        error_messages={
-            'invalid': 'Invalid URL format'
-        }
     )
 
     phone = StringField(
-        regex=r'^\+?1?\d{9,15}$',
-        error_messages={
-            'regex': 'Invalid phone number format'
-        }
+        regex=r'^\+?1?\d{9,15}$'
     )
 
     email = EmailField(
-        error_messages={
-            'invalid': 'Invalid email format'
-        }
     )
 
     is_active = BooleanField(default=True)
@@ -165,11 +147,7 @@ class Venue(Document):
     image_path = StringField(
         required=True,
         default='/uploads/img/venues/default/default.png',
-        regex=r'^/uploads/img/venues/[\w-]+/[\w-]+\.png$',
-        error_messages={
-            'required': 'Image path is required',
-            'regex': 'Invalid image path format. Should be /uploads/img/venues/venue-slug/venue-slug.png'
-        }
+        regex=r'^/uploads/img/venues/[\w-]+/[\w-]+\.png$'
     )
 
     slug = StringField(

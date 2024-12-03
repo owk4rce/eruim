@@ -1,6 +1,7 @@
 from flask import Blueprint
 from backend.src.controllers.event_types_controller import get_all_event_types, create_new_event_type, \
-    full_update_existing_event_type, part_update_existing_event_type, delete_existing_event_type
+    full_update_existing_event_type, part_update_existing_event_type, delete_existing_event_type, \
+    get_existing_event_type
 
 # Create Blueprint for event types
 event_types_bp = Blueprint("event_types", __name__, url_prefix="/event_types")
@@ -10,6 +11,12 @@ event_types_bp = Blueprint("event_types", __name__, url_prefix="/event_types")
 def get_event_types():
     """Handle GET request for retrieving all event types"""
     return get_all_event_types()
+
+
+@event_types_bp.route("/<slug>", methods=["GET"])
+def get_venue_type(slug):
+    """Handle GET request for retrieving one venue type"""
+    return get_existing_event_type(slug)
 
 
 @event_types_bp.route("/", methods=["POST"])

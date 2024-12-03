@@ -15,7 +15,7 @@ def get_venue_types():
 
 @venue_types_bp.route("/<slug>", methods=["GET"])
 def get_venue_type(slug):
-    """Handle GET request for retrieving all venue types"""
+    """Handle GET request for retrieving one venue type"""
     return get_existing_venue_type(slug)
 
 

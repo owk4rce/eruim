@@ -11,37 +11,32 @@ from backend.src.utils.exceptions import UserError
 from backend.src.utils.file_utils import validate_image, save_venue_image
 from backend.src.utils.language_utils import validate_language
 from backend.src.utils.constants import ALLOWED_VENUE_BODY_PARAMS, OPTIONAL_VENUE_BODY_PARAMS, \
-    STRICTLY_REQUIRED_VENUE_BODY_PARAMS
+    STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS, SUPPORTED_LANGUAGES
 from backend.src.utils.pre_mongo_validators import validate_venue_data
 
 
 def get_all_venues():
     """
-    Get list of all venues
 
-    Query Parameters:
-        - lang (str, optional): Language for venues (en, ru, he). Defaults to 'en'
-
-    Returns:
-        JSON response with:
-        - status: success/error
-        - data: list of venues or error message
-        - count: total number of cities (only if successful)
     """
     if request.data:
         raise UserError("Using body in GET-method is restricted.")
 
-    # Get language preference from query parameter, default to English
-    lang_arg = request.args.get("lang", "en")
-    language = validate_language(lang_arg)
-    if language is None:
-        raise UserError(f"Unsupported language: {lang_arg}")
+    unknown_args = set(request.args.keys()) - ALLOWED_VENUE_GET_ALL_ARGS
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    # Get language preference from query parameter
+    lang_arg = request.args.get("lang")
+    if lang_arg:
+        if lang_arg not in SUPPORTED_LANGUAGES:
+            raise UserError(f"Unsupported language: {lang_arg}")
 
     # Get active preferences for venues
     is_active_arg = request.args.get("is_active")
 
     # Get all venues from database
-    match is_active_arg:
+    match is_active_arg.lower():
         case "true":
             venues = Venue.objects(is_active=True)
         case "false":
@@ -55,7 +50,7 @@ def get_all_venues():
             }), 400
 
     # format response
-    venues_data = [venue.to_response_dict(language) for venue in venues]
+    venues_data = [venue.to_response_dict(lang_arg) for venue in venues]
 
     return jsonify({
         "status": "success",
@@ -64,28 +59,41 @@ def get_all_venues():
     }), 200
 
 
+def get_existing_venue(slug):
+    """
+
+    """
+    if request.data:
+        raise UserError("Using body in GET-method is restricted.")
+
+    unknown_args = set(request.args.keys()) - {"lang"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    # Get language preference from query parameter
+    lang_arg = request.args.get("lang")
+    if lang_arg:
+        if lang_arg not in SUPPORTED_LANGUAGES:
+            raise UserError(f"Unsupported language: {lang_arg}")
+
+    # Get one venue from database
+    venue = Venue.objects(slug=slug).first()
+
+    if not venue:
+        raise UserError(f"Venue with slug {slug} not found.", 404)
+
+    # format response
+    venue_data = venue.to_response_dict(lang_arg)
+
+    return jsonify({
+        "status": "success",
+        "data": venue_data
+    }), 200
+
+
 def create_new_venue():
     """
-    Create new venue
 
-    Query Body Parameters:
-        - name_en (str, required): Name in English
-        - name_ru (str, required): Name in Russian
-        - name_he (str, required): Name in Hebrew
-        - address_en (str, required): Address in English
-        - description_en (str, required): Description in English
-        - description_ru (str, required): Description in Russian
-        - description_he (str, required): Description in Hebrew
-        - city_en (str, required): City name in English
-        - website (str, optional): website of the venue (URL)
-        - phone (str, optional): phone number of the venue
-        - email (str, optional): email of the venue
-        - image_path (str, optional): image of the venue
-
-    Returns:
-        JSON response with:
-        - status: success/error
-        - message: new venue created
     """
     file = None
     if request.content_type.startswith("multipart/form-data"):  # expecting file via form
@@ -107,15 +115,9 @@ def create_new_venue():
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    for param in STRICTLY_REQUIRED_VENUE_BODY_PARAMS:
+    for param in STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS:
         if param not in data:
             raise UserError(f"Body parameter '{param}' is missing.")
-        # elif not isinstance(data[param], str):
-        #     raise UserError(f"Body parameter {param} must be a string.")
-
-    # for param in OPTIONAL_VENUE_BODY_PARAMS:
-    #     if param in data and not isinstance(data["website"], str):
-    #         raise UserError(f"Body parameter {param} must be a string.")
 
     if 12 < len(data) < 5:
         raise UserError("Incorrect number of parameters in body.")
@@ -257,6 +259,7 @@ def create_new_venue():
         location=address_data["location"],
         phone=data.get("phone"),
         website=data.get("website"),
+        email=data.get("email"),
         slug=slugify(name_en)
     )
 
@@ -271,3 +274,11 @@ def create_new_venue():
         'message': 'Venue created successfully',
         "data": venue.to_response_dict()
     }), 201
+
+
+def full_update_existing_venue(slug):
+    """
+    full update venue
+
+    """
+    return
