@@ -7,7 +7,7 @@ from backend.src.services.geonames_service import validate_and_get_names
 from backend.src.services.here_service import validate_and_get_location
 from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.file_utils import validate_image, save_venue_image
+from backend.src.utils.file_utils import validate_image, save_venue_image, delete_folder_from_path
 from backend.src.utils.constants import (STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS, \
                                          SUPPORTED_LANGUAGES, ALLOWED_VENUE_CREATE_BODY_PARAMS, VENUE_PATTERNS,
                                          ALLOWED_VENUE_UPDATE_BODY_PARAMS)
@@ -599,7 +599,8 @@ def delete_existing_venue(slug):
             409
         )
 
-    # If no active associated venues, delete the venue
+    # If no active associated venues, delete the venue and image from image_path
+    delete_folder_from_path(venue.image_path)
     venue.delete()  # cascade deleting of events (implemented in model Event)
 
     # Return 204 No Content for successful deletion

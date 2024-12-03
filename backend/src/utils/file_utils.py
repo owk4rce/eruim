@@ -1,7 +1,8 @@
 import os
+import shutil
+
 from werkzeug.utils import secure_filename
 from PIL import Image
-from flask import current_app
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.constants import ALLOWED_IMG_EXTENSIONS, UPLOAD_FOLDER
 from .exceptions import ConfigurationError
@@ -12,10 +13,9 @@ def is_allowed_file(filename):
 
 
 def validate_image(file):
-    img_max_size = os.getenv("MAX_FILE_SIZE")
-
-    if not img_max_size:
-        raise ConfigurationError("MAX_FILE_SIZE not set in .env")
+    # getting config env var
+    from flask import current_app
+    img_max_size = current_app.config["MAX_FILE_SIZE"]
 
     if not file:
         raise UserError("No file uploaded.")
@@ -54,3 +54,23 @@ def save_venue_image(file, venue_slug):
     img.save(file_path, 'PNG')
 
     return f"/uploads/img/venues/{venue_slug}/{filename}"
+
+
+def delete_folder_from_path(image_path):
+    """
+    Delete folder that contains the image based on image path.
+    Example: for '/uploads/img/venues/haifa-museum/image.png'
+    deletes the 'haifa-museum' folder with all contents.
+
+    Args:
+        image_path (str): Full image path from database
+    """
+    relative_path = image_path.replace('/uploads/', '', 1)
+    full_path = os.path.join(UPLOAD_FOLDER, relative_path)
+    folder_to_delete = os.path.dirname(full_path)
+
+    if os.path.basename(folder_to_delete) == 'default':
+        return
+
+    if os.path.exists(folder_to_delete):
+        shutil.rmtree(folder_to_delete)

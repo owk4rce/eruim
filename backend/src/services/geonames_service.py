@@ -1,15 +1,14 @@
 from requests import get, RequestException
-from backend.src.utils.exceptions import ConfigurationError, UserError, ExternalServiceError
-import os
+from backend.src.utils.exceptions import UserError, ExternalServiceError
 
 
 def validate_and_get_names(city_name_en):
     """
     Validates city using GeoNames API and returns names in different languages
     """
-    geonames_username = os.getenv("GEONAMES_USERNAME")
-    if not geonames_username:
-        raise ConfigurationError("GEONAMES_USERNAME not set in .env")
+    # get env var from config
+    from flask import current_app
+    geonames_username = current_app.config["GEONAMES_USERNAME"]
 
     # Search for the city
     search_url = f"http://api.geonames.org/searchJSON"
