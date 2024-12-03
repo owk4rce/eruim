@@ -1,4 +1,4 @@
-from mongoengine import Document, StringField, ValidationError, DateTimeField, ReferenceField, IntField, BooleanField
+from mongoengine import Document, StringField, ValidationError, DateTimeField, ReferenceField, IntField, BooleanField, CASCADE
 from datetime import datetime
 
 
@@ -93,6 +93,7 @@ class Event(Document):
         'Venue',
         required=True,
         index=True,
+        reverse_delete_rule=CASCADE,
         error_messages={
             'required': 'Venue reference is required'
         }

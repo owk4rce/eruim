@@ -579,3 +579,29 @@ def part_update_existing_venue(slug):
     }), 200
 
 
+def delete_existing_venue(slug):
+    """
+
+    """
+    if request.data:
+        raise UserError("Using body in DELETE-method is restricted.")
+
+    # Find existing venue type
+    venue = Venue.objects(slug=slug).first()
+    if not venue:
+        raise UserError(f"Venue with slug '{slug}' not found", 404)
+
+    associated_active_events = Event.objects(venue=venue, is_active=True).count()
+
+    if associated_active_events > 0:
+        raise UserError(
+            "Cannot delete venue with active events.",
+            409
+        )
+
+    # If no active associated venues, delete the venue
+    venue.delete()  # cascade deleting of events (implemented in model Event)
+
+    # Return 204 No Content for successful deletion
+    return '', 204
+
