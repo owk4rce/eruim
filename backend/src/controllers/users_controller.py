@@ -1,4 +1,5 @@
 from flask import request, jsonify
+
 from backend.src.models.user import User
 from backend.src.utils.constants import ALLOWED_USER_BODY_PARAMS, REQUIRED_USER_BODY_PARAMS
 from backend.src.utils.exceptions import UserError
@@ -9,8 +10,8 @@ def get_all_users():
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - {"is_active", "role"}
     if unknown_args:
@@ -54,11 +55,11 @@ def get_existing_user(user_id):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
-
-    if request.args:
-        raise UserError(f"Arguments in this request are restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
+    #
+    # if request.args:
+    #     raise UserError(f"Arguments in this request are restricted.")
 
     # Get one user from database
     user = User.objects(id=user_id).first()
@@ -79,12 +80,14 @@ def create_new_user():
     """
 
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     unknown_params = set(data.keys()) - ALLOWED_USER_BODY_PARAMS
     if unknown_params:
@@ -121,12 +124,14 @@ def full_update_existing_user(user_id):
     """
 
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     # Find existing user
     user = User.objects(id=user_id).first()
@@ -144,11 +149,11 @@ def full_update_existing_user(user_id):
     validate_user_data(data)  # pre-mongo validation
 
     # Fully update user with data
-    user.email=data['email']
-    user.password=data['password']  # clean from model is responsible for hashing
-    user.role=data['role']
-    user.is_active=data['is_active']
-    user.default_lang=data['default_lang']
+    user.email = data['email']
+    user.password = data['password']  # clean from model is responsible for hashing
+    user.role = data['role']
+    user.is_active = data['is_active']
+    user.default_lang = data['default_lang']
 
     user.save()
 
@@ -163,12 +168,14 @@ def part_update_existing_user(user_id):
     """
 
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     # Find existing user
     user = User.objects(id=user_id).first()
@@ -186,7 +193,7 @@ def part_update_existing_user(user_id):
     unchanged_fields = []
 
     for param in data:
-        if param == 'password':     # check if new password is different from stored in hash
+        if param == 'password':  # check if new password is different from stored in hash
             if user.verify_password(data['password']):
                 unchanged_fields.append(param)
             else:
@@ -221,8 +228,8 @@ def delete_existing_user(user_id):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in DELETE-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in DELETE-method is restricted.")
 
     # Find existing user
     user = User.objects(id=user_id).first()

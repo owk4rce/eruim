@@ -7,7 +7,6 @@ from backend.src.config.config import load_config
 from backend.src.config.db import connect_db
 from backend.src.routes import api_v1_bp
 from backend.src.utils.error_handlers import register_error_handlers
-from backend.src.utils.exceptions import UserError
 
 app = Flask(__name__)
 

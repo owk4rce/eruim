@@ -135,6 +135,15 @@ class User(Document):
             "last_login": self.last_login
         }
 
+    def to_profile_response_dict(self):
+        """Convert user to API response format"""
+        return {
+            "email": self.email,
+            "favorite_events": [
+                event.to_response_dict(self.default_lang) for event in self.favorite_events
+            ],
+        }
+
     def clean(self):
         """Validate and hash password before saving"""
         if self._data.get('password'):
