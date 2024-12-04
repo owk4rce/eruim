@@ -37,7 +37,7 @@ def load_config():
         # JWT
         "JWT_SECRET_KEY": os.getenv("JWT_SECRET_KEY"),
         "JWT_ACCESS_TOKEN_EXPIRES": timedelta(days=1),
-        "JWT_COOKIE_SECURE": True,
+        "JWT_COOKIE_SECURE": False if os.getenv("DEBUG") == "true" else True,
 
         # External APIs
         "GEONAMES_USERNAME": os.getenv("GEONAMES_USERNAME"),

@@ -99,4 +99,10 @@ USER_PATTERNS = {
     'default_lang': r'^(en|ru|he)$'
 }
 
+# auth
+
+ALLOWED_AUTH_BODY_PARAMS = {'email', "password", "default_lang"}
+
+REQUIRED_AUTH_BODY_PARAMS = {'email', "password"}
+
 

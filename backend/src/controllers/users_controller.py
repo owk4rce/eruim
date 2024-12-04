@@ -96,6 +96,10 @@ def create_new_user():
 
     validate_user_data(data)  # pre-mongo validation
 
+    # Check if email already exists
+    if User.objects(email=data['email']).first():
+        raise UserError("User with this email already exists", 409)
+
     # Create user with data
     user = User(
         email=data['email'],

@@ -120,12 +120,9 @@ def create_new_venue():
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    for param in STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS:
-        if param not in data:
-            raise UserError(f"Body parameter '{param}' is missing.")
-
-    if 12 < len(data) < 5:
-        raise UserError("Incorrect number of parameters in body.")
+    missing_params = STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS - set(data.keys())
+    if missing_params:
+        raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
     validate_venue_data(data)
 
@@ -134,12 +131,21 @@ def create_new_venue():
         raise UserError(f"Venue type '{data['venue_type_en']}' not found", 404)
 
     if "name_en" in data:
+        # Check if 'name_en' already in use
+        if Venue.objects(name_en=data["name_en"]).first():
+            raise UserError(f"Venue with name '{data['name_en']}' already exists", 409)
         source_lang = "en"
         source_text = data["name_en"]
     elif "name_he" in data:
+        # Check if 'name_he' already in use
+        if Venue.objects(name_he=data["name_he"]).first():
+            raise UserError(f"Venue with name '{data['name_he']}' already exists", 409)
         source_lang = "iw"  # Google Translate uses 'iw'
         source_text = data["name_he"]
     elif "name_ru" in data:
+        # Check if 'name_ru' already in use
+        if Venue.objects(name_he=data["name_ru"]).first():
+            raise UserError(f"Venue with name '{data['name_ru']}' already exists", 409)
         source_lang = "ru"
         source_text = data["name_ru"]
     else:
@@ -291,12 +297,9 @@ def full_update_existing_venue(slug):
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    for param in ALLOWED_VENUE_UPDATE_BODY_PARAMS:
-        if param not in data:
-            raise UserError(f"Body parameter '{param}' is missing.")
-
-    if len(data) != 15:
-        raise UserError("Incorrect number of parameters in body.")
+    missing_params = ALLOWED_VENUE_UPDATE_BODY_PARAMS - set(data.keys())
+    if missing_params:
+        raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
     validate_venue_data(data)
 
@@ -412,18 +415,15 @@ def part_update_existing_venue(slug):
         if not data:
             raise UserError("JSON body is empty")
 
-    if len(data) > 15:
-        raise UserError("Incorrect number of parameters in body.")
-
-    venue = Venue.objects(slug=slug).first()
-    if not venue:
-        raise UserError(f"Venue with slug '{slug}' not found", 404)
-
     unknown_params = set(data.keys()) - ALLOWED_VENUE_UPDATE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
     validate_venue_data(data)
+
+    venue = Venue.objects(slug=slug).first()
+    if not venue:
+        raise UserError(f"Venue with slug '{slug}' not found", 404)
 
     # Track changes
     updated_fields = []

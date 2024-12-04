@@ -5,7 +5,6 @@ from backend.src.models.venue import Venue
 from backend.src.services.geonames_service import validate_and_get_names
 from backend.src.utils.constants import SUPPORTED_LANGUAGES
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.language_utils import validate_language
 from backend.src.models.city import City
 from backend.src.utils.pre_mongo_validators import validate_city_data
 
@@ -94,6 +93,10 @@ def create_new_city():
         raise UserError("Body of request must contain only 'name_en' parameter.")
 
     validate_city_data(data)
+
+    # Check if city already exists
+    if City.objects(name_en=data["name_en"]).first():
+        raise UserError(f"City with name {data['name_en']} already exists", 409)
 
     names = validate_and_get_names(data['name_en'])     # geovalidation and getting names
 

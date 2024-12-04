@@ -3,10 +3,8 @@ from slugify import slugify
 from backend.src.models.venue import Venue
 from backend.src.models.venue_type import VenueType
 from backend.src.services.translation_service import translate_with_google
-from backend.src.utils.constants import ALLOWED_VENUE_TYPE_BODY_PARAMS, ALLOWED_VENUE_TYPE_GET_ALL_ARGS, \
-    SUPPORTED_LANGUAGES
+from backend.src.utils.constants import ALLOWED_VENUE_TYPE_BODY_PARAMS, SUPPORTED_LANGUAGES
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.language_utils import validate_language
 from backend.src.utils.pre_mongo_validators import validate_venue_type_data
 
 
@@ -118,18 +116,24 @@ def create_new_venue_type():
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    if len(data) > 3:
-        raise UserError("Incorrect number of parameters in body.")
-
     validate_venue_type_data(data)  # pre-mongo validation
 
     if "name_en" in data:
+        # Check if 'name_en' already in use
+        if VenueType.objects(name_en=data["name_en"]).first():
+            raise UserError(f"Venue type with name '{data['name_en']}' already exists", 409)
         source_lang = "en"
         source_text = data["name_en"]
     elif "name_he" in data:
+        # Check if 'name_he' already in use
+        if VenueType.objects(name_he=data["name_he"]).first():
+            raise UserError(f"Venue type with name '{data['name_he']}' already exists", 409)
         source_lang = "iw"  # Google Translate uses 'iw'
         source_text = data["name_he"]
     elif "name_ru" in data:
+        # Check if 'name_ru' already in use
+        if VenueType.objects(name_ru=data["name_ru"]).first():
+            raise UserError(f"Venue type with name '{data['name_ru']}' already exists", 409)
         source_lang = "ru"
         source_text = data["name_ru"]
     else:
@@ -193,8 +197,9 @@ def full_update_existing_venue_type(slug):
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    if len(data) != 3:
-        raise UserError("Incorrect number of parameters in body.")
+    missing_params = ALLOWED_VENUE_TYPE_BODY_PARAMS - set(data.keys())
+    if missing_params:
+        raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
     validate_venue_type_data(data)  # pre-mongo validation
 
@@ -241,9 +246,6 @@ def part_update_existing_venue_type(slug):
     unknown_params = set(data.keys()) - ALLOWED_VENUE_TYPE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
-
-    if len(data) > 3:
-        raise UserError("Incorrect number of parameters in body.")
 
     validate_venue_type_data(data)  # pre-mongo validation
 

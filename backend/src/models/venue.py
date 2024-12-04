@@ -57,6 +57,7 @@ class Venue(Document):
     """
     name_ru = StringField(
         required=True,
+        unique=True,
         min_length=3,
         max_length=100,
         regex=r'^[а-яА-ЯёЁ\s\-]+$'
@@ -64,6 +65,7 @@ class Venue(Document):
 
     name_en = StringField(
         required=True,
+        unique=True,
         min_length=3,
         max_length=100,
         regex=r'^[a-zA-Z\s\-]+$'
@@ -71,6 +73,7 @@ class Venue(Document):
 
     name_he = StringField(
         required=True,
+        unique=True,
         min_length=3,
         max_length=100,
         regex=r'^[\u0590-\u05FF\s\-]+$'

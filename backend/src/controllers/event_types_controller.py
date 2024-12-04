@@ -3,7 +3,6 @@ from slugify import slugify
 from backend.src.services.translation_service import translate_with_google
 from backend.src.utils.constants import ALLOWED_EVENT_TYPE_BODY_PARAMS, SUPPORTED_LANGUAGES
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.language_utils import validate_language
 from backend.src.models.event_type import EventType
 from backend.src.models.event import Event
 from backend.src.utils.pre_mongo_validators import validate_event_type_data
@@ -71,40 +70,7 @@ def get_existing_event_type(slug):
 
 def create_new_event_type():
     """
-    Create new event type with automatic translation of missing names.
 
-    Request Body:
-        JSON object with at least one name field (required):
-        - name_en (str, optional): Name in English
-        - name_ru (str, optional): Name in Russian
-        - name_he (str, optional): Name in Hebrew
-
-        Example (minimum valid request):
-            {
-                "name_en": "Concert"
-            }
-            or
-            {
-                "name_ru": "Концерт"
-            }
-            or
-            {
-                "name_he": "קונצרט"
-            }
-
-        Missing names will be auto-translated from the provided one.
-
-    Returns:
-        tuple: (JSON response, status code)
-            - response format:
-                {
-                    "status": "success",
-                    "message": str
-                }
-            - status codes:
-                201: created successfully
-                400: validation error (missing all name fields/wrong format)
-                415: wrong content type
     """
     if not request.is_json:
         raise UserError("Content-Type must be application/json.", 415)
@@ -117,18 +83,24 @@ def create_new_event_type():
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    if len(data) > 3:
-        raise UserError("Incorrect number of parameters in body.")
-
     validate_event_type_data(data)  # pre-mongo validation
 
     if "name_en" in data:
+        # Check if 'name_en' already in use
+        if EventType.objects(name_en=data["name_en"]).first():
+            raise UserError(f"Event type with name '{data['name_en']}' already exists", 409)
         source_lang = "en"
         source_text = data["name_en"]
     elif "name_he" in data:
+        # Check if 'name_he' already in use
+        if EventType.objects(name_he=data["name_he"]).first():
+            raise UserError(f"Event type with name '{data['name_he']}' already exists", 409)
         source_lang = "iw"  # Google Translate uses 'iw'
         source_text = data["name_he"]
     elif "name_ru" in data:
+        # Check if 'name_ru' already in use
+        if EventType.objects(name_ru=data["name_ru"]).first():
+            raise UserError(f"Event type with name '{data['name_ru']}' already exists", 409)
         source_lang = "ru"
         source_text = data["name_ru"]
     else:
@@ -192,8 +164,9 @@ def full_update_existing_event_type(slug):
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    if len(data) != 3:
-        raise UserError("Incorrect number of parameters in body.")
+    missing_params = ALLOWED_EVENT_TYPE_BODY_PARAMS - set(data.keys())
+    if missing_params:
+        raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
     validate_event_type_data(data)  # pre-mongo validation
 
@@ -240,9 +213,6 @@ def part_update_existing_event_type(slug):
     unknown_params = set(data.keys()) - ALLOWED_EVENT_TYPE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
-
-    if len(data) > 3:
-        raise UserError("Incorrect number of parameters in body.")
 
     validate_event_type_data(data)  # pre-mongo validation
 
