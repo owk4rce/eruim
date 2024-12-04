@@ -1,4 +1,4 @@
-from .constants import SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
+from backend.src.utils.constants import SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
 
 
 def validate_language(lang=None):

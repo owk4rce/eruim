@@ -38,6 +38,9 @@ def load_config():
         "JWT_SECRET_KEY": os.getenv("JWT_SECRET_KEY"),
         "JWT_ACCESS_TOKEN_EXPIRES": timedelta(days=1),
         "JWT_COOKIE_SECURE": False if os.getenv("DEBUG") == "true" else True,
+        "JWT_TOKEN_LOCATION": ["headers", "cookies"],  # looking for token in headers and cookies
+        "JWT_ACCESS_COOKIE_NAME": "token",  # name of cookie
+        "JWT_COOKIE_CSRF_PROTECT": False,
 
         # External APIs
         "GEONAMES_USERNAME": os.getenv("GEONAMES_USERNAME"),

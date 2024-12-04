@@ -2,7 +2,7 @@ from flask import request, jsonify
 from slugify import slugify
 from backend.src.utils.constants import REQUIRED_EVENT_TYPE_BODY_PARAMS
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.language_utils import validate_language
+from backend.src.config.experiments.language_utils import validate_language
 from backend.src.models.event_type import EventType
 
 

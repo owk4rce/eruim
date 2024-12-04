@@ -6,10 +6,9 @@ from backend.src.models.venue import Venue
 from backend.src.services.geonames_service import validate_and_get_names
 from backend.src.services.here_service import validate_and_get_addr_and_location
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.language_utils import validate_language
+from backend.src.config.experiments.language_utils import validate_language
 from backend.src.utils.constants import ALLOWED_VENUE_BODY_PARAMS, REQUIRED_VENUE_BODY_PARAMS, \
     OPTIONAL_VENUE_BODY_PARAMS
-from werkzeug.exceptions import BadRequest
 
 
 def get_all_venues():

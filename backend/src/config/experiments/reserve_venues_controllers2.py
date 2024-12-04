@@ -6,12 +6,10 @@ from backend.src.models.venue import Venue
 from backend.src.models.venue_type import VenueType
 from backend.src.services.geonames_service import validate_and_get_names
 from backend.src.services.here_service import validate_and_get_addr_and_location
-from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
+from backend.src.services.translation_service import translate_with_google
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.file_utils import validate_image, save_venue_image
-from backend.src.utils.language_utils import validate_language
-from backend.src.utils.constants import ALLOWED_VENUE_BODY_PARAMS, OPTIONAL_VENUE_BODY_PARAMS, \
-    STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS, SUPPORTED_LANGUAGES
+from backend.src.utils.constants import ALLOWED_VENUE_BODY_PARAMS, STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS, SUPPORTED_LANGUAGES
 from backend.src.utils.pre_mongo_validators import validate_venue_data
 
 

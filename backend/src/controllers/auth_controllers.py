@@ -117,3 +117,29 @@ def existing_user_login():
     )
 
     return response, 200
+
+
+def user_logout():
+    """
+    Logout user by removing JWT token cookie
+
+    Returns:
+        Success message
+    """
+    if request.data:
+        raise UserError("Using body in this request is restricted.")
+
+    response = jsonify({
+        'status': 'success',
+        'message': 'Logout successful'
+    })
+
+    # Remove token cookie
+    response.delete_cookie(
+        'token',
+        httponly=True,
+        secure=current_app.config["JWT_COOKIE_SECURE"],
+        samesite='Strict'
+    )
+
+    return response, 200
