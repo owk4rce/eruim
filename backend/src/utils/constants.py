@@ -107,6 +107,15 @@ ALLOWED_EVENT_CREATE_BODY_PARAMS = {
     "price_type", "price_amount"
 }
 
+ALLOWED_EVENT_UPDATE_BODY_PARAMS = {
+    "name_en", "name_ru", "name_he",
+    "description_en", "description_ru", "description_he",
+    "venue_slug", "event_type_slug",
+    "start_date", "end_date",
+    "price_type", "price_amount",
+    "is_active"
+}
+
 STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS = {
     "venue_slug", "event_type_slug", "start_date", "end_date", "price_type"
 }

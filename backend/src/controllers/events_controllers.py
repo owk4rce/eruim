@@ -12,7 +12,8 @@ from backend.src.utils.file_utils import validate_image, delete_folder_from_path
     save_image_from_request
 from backend.src.utils.constants import (SUPPORTED_LANGUAGES,
                                          ALLOWED_VENUE_UPDATE_BODY_PARAMS, ALLOWED_EVENT_GET_ALL_ARGS,
-                                         ALLOWED_EVENT_CREATE_BODY_PARAMS, STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS)
+                                         ALLOWED_EVENT_CREATE_BODY_PARAMS, STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS,
+                                         ALLOWED_EVENT_UPDATE_BODY_PARAMS, TIMEZONE)
 from backend.src.utils.pre_mongo_validators import validate_venue_data, validate_event_data
 from backend.src.utils.transliteration import transliterate_en_to_he, transliterate_en_to_ru
 from backend.src.models.event import Event
@@ -235,7 +236,7 @@ def create_new_event():
     }), 201
 
 
-def full_update_existing_venue(slug):
+def full_update_existing_event(slug):
     """
     full update venue
 
@@ -259,6 +260,12 @@ def full_update_existing_venue(slug):
                 case _:
                     raise UserError("Parameter 'is_active' must be 'true' or 'false'")
 
+        if "price_amount" in data:  # converting str to int if it matches
+            if data["price_amount"].isdigit():
+                data["price_amount"] = int(data["price_amount"])
+            else:
+                raise UserError("Parameter 'price_amount' must be a number.")
+
         if "image" in request.files:
             file = request.files["image"]
             validate_image(file)
@@ -269,93 +276,63 @@ def full_update_existing_venue(slug):
         if not data:
             raise UserError("JSON body is empty")
 
-    venue = Venue.objects(slug=slug).first()
-    if not venue:
-        raise UserError(f"Venue with slug '{slug}' not found", 404)
+    event = Event.objects(slug=slug).first()
+    if not event:
+        raise UserError(f"Event with slug '{slug}' not found", 404)
 
-    unknown_params = set(data.keys()) - ALLOWED_VENUE_UPDATE_BODY_PARAMS
+    unknown_params = set(data.keys()) - ALLOWED_EVENT_UPDATE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    missing_params = ALLOWED_VENUE_UPDATE_BODY_PARAMS - set(data.keys())
+    missing_params = ALLOWED_EVENT_UPDATE_BODY_PARAMS - set(data.keys())
     if missing_params:
         raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
-    validate_venue_data(data)
+    # date format for slug
+    slug_date = data['start_date'].replace(' ', '-')
 
-    is_active = data['is_active']
+    try:
+        data["start_date"] = datetime.strptime(data["start_date"], '%Y-%m-%d %H:%M')
+        data["end_date"] = datetime.strptime(data["end_date"], '%Y-%m-%d %H:%M')
+    except ValueError:
+        raise UserError('Invalid date format. Use YYYY-MM-DD HH:MM')
 
-    if not is_active and venue.is_active:
-        active_events = Event.objects(venue=venue, is_active=True).count()
-        if active_events > 0:
-            raise UserError(
-                "Cannot deactivate venue with active events. Please deactivate all events first.",
-                409
-            )
+    validate_event_data(data)
 
-    venue_type = VenueType.objects(name_en=data["venue_type_en"].lower()).first()
-    if not venue_type:
-        raise UserError(f"Venue type '{data['venue_type_en']}' not found", 404)
+    event_type = EventType.objects(slug=data["event_type_slug"]).first()
+    if not event_type:
+        raise UserError(f"Event type with slug '{data['event_type_slug']}' not found.", 404)
 
-    # Check if city exists
-    city = City.objects(name_en=data["city_en"]).first()
+    venue = Venue.objects(slug=data["venue_slug"].lower()).first()
+    if not venue:
+        raise UserError(f"Venue with slug '{data['venue_slug']}' not found.", 404)
 
-    # If city doesn't exist, error
-    if not city:
-        raise UserError(f"City '{data['city_en']}' not found", 404)
-
-    name_en = data["name_en"]
-    name_ru = data["name_ru"]
-    name_he = data["name_he"]
-
-    description_en = data["description_en"]
-    description_ru = data["description_ru"]
-    description_he = data["description_he"]
-
-    phone = data["phone"]
-    website = data["website"]
-    email = data["email"]
-
-    address_ru = data['address_ru']
-    address_he = data['address_he']
-    address_en = data['address_en']
-
-    if venue.address_en != address_en:
-        # Find coordinates if core address_en changed
-        full_address_he = f"{address_he}, {city.name_he}"
-
-        location = validate_and_get_location(full_address_he)
-
-        if venue.location['coordinates'] != location['coordinates']:
-            venue.location = location
-
-    venue.name_ru = name_ru
-    venue.name_he = name_he
-    venue.name_en = name_en
-    venue.address_en = address_en
-    venue.address_ru = address_ru
-    venue.address_he = address_he
-    venue.description_en = description_en
-    venue.description_ru = description_ru
-    venue.description_he = description_he
-    venue.venue_type = venue_type
-    venue.city = city
-    venue.phone = phone
-    venue.website = website
-    venue.email = email
-    venue.is_active = is_active
-    venue.slug = slugify(name_en)
+    event.name_en = data["name_en"]
+    event.name_ru = data["name_ru"]
+    event.name_he = data["name_he"]
+    event.description_en = data["description_en"]
+    event.description_ru = data["description_ru"]
+    event.description_he = data["description_he"]
+    event.event_type = event_type
+    event.venue = venue
+    event.start_date = TIMEZONE.localize(data["start_date"])
+    event.end_date = TIMEZONE.localize(data["end_date"])
+    event.price_type = data["price_type"]
+    event.price_amount = data.get("price_amount")
+    event.is_active = data['is_active']
+    event.slug = slugify(f"{data['name_en']}-{slug_date}")
 
     if "image" in request.files:
-        image_path = save_venue_image(file, venue.slug)
-        venue.image_path = image_path
+        image_path = save_image_from_request(file, "events", event.slug)
+        event.image_path = image_path
 
-    venue.save()
+    event.save()
+    event.reload()
 
     return jsonify({
         'status': 'success',
-        'message': 'Venue fully updated successfully',
-        "data": venue.to_response_dict()
+        'message': 'Event fully updated successfully',
+        "data": event.to_response_dict()
     }), 200
 
 

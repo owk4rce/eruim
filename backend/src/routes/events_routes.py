@@ -1,7 +1,8 @@
 from flask import Blueprint
 from flask_jwt_extended import jwt_required
 
-from backend.src.controllers.events_controllers import get_all_events, get_existing_event, create_new_event
+from backend.src.controllers.events_controllers import get_all_events, get_existing_event, create_new_event, \
+    full_update_existing_event
 from backend.src.utils.custom_decorators import no_body_in_request, manager_required, no_args_in_request
 
 # Create Blueprint for events
@@ -28,12 +29,12 @@ def create_event():
     return create_new_event()
 
 
-# @venues_bp.route("/<slug>", methods=["PUT"])
-# @jwt_required()
-# @manager_required()
-# @no_args_in_request()
-# def full_update_venue(slug):
-#     return full_update_existing_venue(slug)
+@events_bp.route("/<slug>", methods=["PUT"])
+@jwt_required()
+@manager_required()
+@no_args_in_request()
+def full_update_event(slug):
+    return full_update_existing_event(slug)
 #
 #
 # @venues_bp.route("/<slug>", methods=["PATCH"])

@@ -97,7 +97,7 @@ def validate_venue_data(data):
     for param, value in data.items():
         if param == "is_active":
             if not isinstance(value, bool):
-                raise UserError("Parameter 'is_active' must be boolean")
+                raise UserError("Parameter 'is_active' must be boolean.")
             continue
 
         if not isinstance(value, str):
@@ -164,10 +164,16 @@ def validate_event_data(data):
     """
     # Validate patterns for provided text fields
     for param, value in data.items():
+        if param == "is_active":
+            if not isinstance(value, bool):
+                raise UserError("Parameter 'is_active' must be boolean.")
+            continue
+
         if param == "price_amount":
             if not isinstance(value, int):
                 raise UserError("Parameter 'price_amount' must be integer.")
             continue
+
         if param in ["start_date", "end_date"]:
             continue
 
