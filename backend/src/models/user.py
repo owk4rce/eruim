@@ -3,7 +3,9 @@ from mongoengine import Document, StringField, EmailField, ListField, ReferenceF
 from datetime import datetime
 import bcrypt
 import re
-from backend.src.utils.constants import SUPPORTED_LANGUAGES
+import pytz
+
+from backend.src.utils.constants import SUPPORTED_LANGUAGES, TIMEZONE
 from backend.src.utils.exceptions import UserError
 
 
@@ -123,6 +125,18 @@ class User(Document):
 
     def to_response_dict(self):
         """Convert event type to API response format"""
+        if self.created_at:
+            created_utc = pytz.utc.localize(self.created_at)
+            created_local = created_utc.astimezone(TIMEZONE)
+        else:
+            created_local = None
+
+        if self.last_login:
+            last_login_utc = pytz.utc.localize(self.last_login)
+            last_login_local = last_login_utc.astimezone(TIMEZONE)
+        else:
+            last_login_local = None
+
         return {
             "id": str(self.id),
             "email": self.email,
@@ -132,8 +146,16 @@ class User(Document):
                 event.to_response_dict(self.default_lang) for event in self.favorite_events
             ],
             "default_lang": self.default_lang,
-            "created_at": self.created_at,
-            "last_login": self.last_login
+            "created_at": {
+                "format": created_local.strftime('%d.%m.%Y %H:%M') if created_local else None,
+                "local": created_local.strftime('%a, %d %b %Y %H:%M:%S %z') if created_local else None,
+                "utc": self.created_at
+            },
+            "last_login": {
+                "format": last_login_local.strftime('%d.%m.%Y %H:%M') if last_login_local else None,
+                "local": last_login_local.strftime('%a, %d %b %Y %H:%M:%S %z') if last_login_local else None,
+                "utc": self.last_login
+            }
         }
 
     def to_profile_response_dict(self):

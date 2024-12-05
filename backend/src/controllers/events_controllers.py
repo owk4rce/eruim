@@ -1,29 +1,30 @@
 from flask import request, jsonify
 from slugify import slugify
+from datetime import datetime
+
 from backend.src.models.city import City
 from backend.src.models.venue import Venue
 from backend.src.models.venue_type import VenueType
-from backend.src.services.geonames_service import validate_and_get_names
 from backend.src.services.here_service import validate_and_get_location
 from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.file_utils import validate_image, delete_folder_from_path, save_image_from_request
-from backend.src.utils.constants import (STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS,
-                                         SUPPORTED_LANGUAGES, ALLOWED_VENUE_CREATE_BODY_PARAMS,
-                                         ALLOWED_VENUE_UPDATE_BODY_PARAMS)
-from backend.src.utils.pre_mongo_validators import validate_venue_data
+from backend.src.utils.file_utils import validate_image, delete_folder_from_path, \
+    save_image_from_request
+from backend.src.utils.constants import (SUPPORTED_LANGUAGES,
+                                         ALLOWED_VENUE_UPDATE_BODY_PARAMS, ALLOWED_EVENT_GET_ALL_ARGS,
+                                         ALLOWED_EVENT_CREATE_BODY_PARAMS, STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS)
+from backend.src.utils.pre_mongo_validators import validate_venue_data, validate_event_data
 from backend.src.utils.transliteration import transliterate_en_to_he, transliterate_en_to_ru
 from backend.src.models.event import Event
+from backend.src.models.event_type import EventType
 
 
-def get_all_venues():
+def get_all_events():
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in GET-method is restricted.")
 
-    unknown_args = set(request.args.keys()) - ALLOWED_VENUE_GET_ALL_ARGS
+    unknown_args = set(request.args.keys()) - ALLOWED_EVENT_GET_ALL_ARGS
     if unknown_args:
         raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
 
@@ -33,40 +34,37 @@ def get_all_venues():
         if lang_arg not in SUPPORTED_LANGUAGES:
             raise UserError(f"Unsupported language: {lang_arg}")
 
-    # Get active preferences for venues
-    is_active_arg = request.args.get("is_active")
+    # Start with base query (to collect all parameter)
+    query = {}
 
-    # Get all venues from database
-    match is_active_arg.lower():
-        case "true":
-            venues = Venue.objects(is_active=True)
-        case "false":
-            venues = Venue.objects(is_active=False)
-        case None:
-            venues = Venue.objects()
-        case _:
-            return jsonify({
-                "status": "error",
-                "message": "Parameter 'is_active' must be true or false"
-            }), 400
+    # Add is_active filter if provided
+    is_active_arg = request.args.get("is_active")
+    if is_active_arg:
+        match is_active_arg.lower():
+            case "true":
+                query["is_active"] = True
+            case "false":
+                query["is_active"] = False
+            case _:
+                raise UserError("Parameter 'is_active' must be 'true' or 'false'")
+
+    # Get events from database with filters
+    events = Event.objects(**query)
 
     # format response
-    venues_data = [venue.to_response_dict(lang_arg) for venue in venues]
+    events_data = [event.to_response_dict(lang_arg) for event in events]
 
     return jsonify({
         "status": "success",
-        "data": venues_data,
-        "count": len(venues_data)
+        "data": events_data,
+        "count": len(events_data)
     }), 200
 
 
-def get_existing_venue(slug):
+def get_existing_event(slug):
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in GET-method is restricted.")
-
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
         raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
@@ -77,22 +75,22 @@ def get_existing_venue(slug):
         if lang_arg not in SUPPORTED_LANGUAGES:
             raise UserError(f"Unsupported language: {lang_arg}")
 
-    # Get one venue from database
-    venue = Venue.objects(slug=slug).first()
+    # Get one event from database
+    event = Event.objects(slug=slug).first()
 
-    if not venue:
-        raise UserError(f"Venue with slug {slug} not found.", 404)
+    if not event:
+        raise UserError(f"Event with slug {slug} not found.", 404)
 
     # format response
-    venue_data = venue.to_response_dict(lang_arg)
+    event_data = event.to_response_dict(lang_arg)
 
     return jsonify({
         "status": "success",
-        "data": venue_data
+        "data": event_data
     }), 200
 
 
-def create_new_venue():
+def create_new_event():
     """
 
     """
@@ -104,7 +102,13 @@ def create_new_venue():
 
         data = request.form.to_dict()
         if not data:
-            raise UserError("Form data is empty")
+            raise UserError("Form data is empty.")
+
+        if "price_amount" in data:  # converting str to int if it matches
+            if data["price_amount"].isdigit():
+                data["price_amount"] = int(data["price_amount"])
+            else:
+                raise UserError("Parameter 'price_amount' must be a number.")
 
         if "image" in request.files:
             file = request.files["image"]
@@ -116,40 +120,44 @@ def create_new_venue():
         if not data:
             raise UserError("JSON body is empty")
 
-    unknown_params = set(data.keys()) - ALLOWED_VENUE_CREATE_BODY_PARAMS
+    unknown_params = set(data.keys()) - ALLOWED_EVENT_CREATE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    missing_params = STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS - set(data.keys())
+    missing_params = STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS - set(data.keys())
     if missing_params:
         raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
-    validate_venue_data(data)
+    # date format for slug
+    slug_date = data['start_date'].replace(' ', '-')
 
-    venue_type = VenueType.objects(name_en=data["venue_type_en"].lower()).first()
-    if not venue_type:
-        raise UserError(f"Venue type '{data['venue_type_en']}' not found", 404)
+    try:
+        data["start_date"] = datetime.strptime(data["start_date"], '%Y-%m-%d %H:%M')
+        data["end_date"] = datetime.strptime(data["end_date"], '%Y-%m-%d %H:%M')
+    except ValueError:
+        raise UserError('Invalid date format. Use YYYY-MM-DD HH:MM')
+
+    validate_event_data(data)
+
+    event_type = EventType.objects(slug=data["event_type_slug"]).first()
+    if not event_type:
+        raise UserError(f"Event type with slug '{data['event_type_slug']}' not found.", 404)
+
+    venue = Venue.objects(slug=data["venue_slug"].lower()).first()
+    if not venue:
+        raise UserError(f"Venue with slug '{data['venue_slug']}' not found.", 404)
 
     if "name_en" in data:
-        # Check if 'name_en' already in use
-        if Venue.objects(name_en=data["name_en"]).first():
-            raise UserError(f"Venue with name '{data['name_en']}' already exists", 409)
         source_lang = "en"
         source_text = data["name_en"]
     elif "name_he" in data:
-        # Check if 'name_he' already in use
-        if Venue.objects(name_he=data["name_he"]).first():
-            raise UserError(f"Venue with name '{data['name_he']}' already exists", 409)
         source_lang = "iw"  # Google Translate uses 'iw'
         source_text = data["name_he"]
     elif "name_ru" in data:
-        # Check if 'name_ru' already in use
-        if Venue.objects(name_he=data["name_ru"]).first():
-            raise UserError(f"Venue with name '{data['name_ru']}' already exists", 409)
         source_lang = "ru"
         source_text = data["name_ru"]
     else:
-        raise UserError("At least one 'name' in any language must be provided")
+        raise UserError("At least one 'name' in any language must be provided.")
 
     name_en = data.get("name_en")
     name_ru = data.get("name_ru")
@@ -175,7 +183,7 @@ def create_new_venue():
         source_lang = "ru"
         source_text = data["description_ru"]
     else:
-        raise UserError("At least one 'description' in any language must be provided")
+        raise UserError("At least one 'description' in any language must be provided.")
 
     description_en = data.get("description_en")
     description_ru = data.get("description_ru")
@@ -191,31 +199,6 @@ def create_new_venue():
         target_lang = "ru"
         description_ru = translate_with_google(source_text, source_lang, target_lang)
 
-    # Check if city exists, if not - try to add it
-    city = City.objects(name_en=data["city_en"]).first()
-
-    # If city doesn't exist, add it using GeoNames
-    if not city:
-        names = validate_and_get_names(data["city_en"])
-        city = City(
-            name_en=names["en"],
-            name_ru=names["ru"],
-            name_he=names["he"],
-            slug=slugify(names["en"])
-        )
-        city.save()
-
-    address_en = data["address_en"]
-
-    # Translate address to Hebrew and combine with Hebrew city name
-    address_he = translate_with_google(address_en, 'en', 'iw')
-    full_address_he = f"{address_he}, {city.name_he}"
-
-    location = validate_and_get_location(full_address_he)
-
-    # Get Russian address translation
-    address_ru = translate_with_google(address_he, 'iw', 'ru')
-
     # for the cases of non-translated abbreviations like ANU
     name_he = transliterate_en_to_he(name_he)
     name_ru = transliterate_en_to_ru(name_ru)
@@ -223,35 +206,32 @@ def create_new_venue():
     description_he = transliterate_en_to_he(description_he)
     description_ru = transliterate_en_to_ru(description_ru)
 
-    venue = Venue(
+    event = Event(
         name_en=name_en,
         name_ru=name_ru,
         name_he=name_he,
-        address_en=address_en,
-        address_ru=address_ru,
-        address_he=address_he,
         description_en=description_en,
         description_ru=description_ru,
         description_he=description_he,
-        venue_type=venue_type,
-        city=city,
-        location=location,
-        phone=data.get("phone"),
-        website=data.get("website"),
-        email=data.get("email"),
-        slug=slugify(name_en)
+        event_type=event_type,
+        venue=venue,
+        start_date=data["start_date"],
+        end_date=data["end_date"],
+        price_type=data["price_type"],
+        price_amount=data.get("price_amount"),
+        slug=slugify(f"{name_en}-{slug_date}")
     )
 
     if "image" in request.files:
-        image_path = save_image_from_request(file, "venues", venue.slug)
-        venue.image_path = image_path
+        image_path = save_image_from_request(file, "events", event.slug)
+        event.image_path = image_path
 
-    venue.save()
+    event.save()
 
     return jsonify({
         'status': 'success',
-        'message': 'Venue created successfully',
-        "data": venue.to_response_dict()
+        'message': 'Event created successfully.',
+        "data": event.to_response_dict()
     }), 201
 
 
@@ -367,7 +347,7 @@ def full_update_existing_venue(slug):
     venue.slug = slugify(name_en)
 
     if "image" in request.files:
-        image_path = save_image_from_request(file, "venues", venue.slug)
+        image_path = save_venue_image(file, venue.slug)
         venue.image_path = image_path
 
     venue.save()
@@ -430,7 +410,7 @@ def part_update_existing_venue(slug):
     unchanged_fields = []
 
     if "image" in request.files:
-        image_path = save_image_from_request(file, "venues", venue.slug)
+        image_path = save_venue_image(file, venue.slug)
         venue.image_path = image_path
         updated_fields.append("image_path")
 

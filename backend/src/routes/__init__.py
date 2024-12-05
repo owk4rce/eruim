@@ -2,6 +2,7 @@ from flask import Blueprint
 
 from .cities_routes import cities_bp
 from .event_types_routes import event_types_bp
+from .events_routes import events_bp
 from .profile_routes import profile_bp
 from .users_routes import users_bp
 from .venue_types_routes import venue_types_bp
@@ -16,6 +17,7 @@ api_v1_bp.register_blueprint(cities_bp)
 api_v1_bp.register_blueprint(event_types_bp)
 api_v1_bp.register_blueprint(venue_types_bp)
 api_v1_bp.register_blueprint(venues_bp)
+api_v1_bp.register_blueprint(events_bp)
 api_v1_bp.register_blueprint(users_bp)
 api_v1_bp.register_blueprint(auth_bp)
 api_v1_bp.register_blueprint(profile_bp)

@@ -1,5 +1,14 @@
 import os
+import pytz
+
+TIMEZONE = pytz.timezone('Asia/Jerusalem')
+
 ALLOWED_IMG_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+IMAGE_PATHS = {
+    "venues": "/uploads/img/venues/{slug}/{filename}",
+    "events": "/uploads/img/events/{slug}/{filename}"
+}
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads')
 
@@ -26,19 +35,19 @@ ALLOWED_VENUE_UPDATE_BODY_PARAMS = {
     "is_active"
 }
 
-STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS = [
+STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS = {
     "address_en", "city_en", "venue_type_en"
-]
+}
 
 OPTIONAL_VENUE_BODY_PARAMS = [
     "website", "phone", "email"
 ]
 
 VENUE_PATTERNS = {
-    # Names: only letters, spaces and hyphens (3-100 chars)
-    'name_en': r'^[a-zA-Z\s-]{3,100}$',
-    'name_ru': r'^[а-яА-ЯёЁ\s-]{3,100}$',
-    'name_he': r'^[\u0590-\u05FF\s-]{3,100}$',
+    # Names: letters, digits, spaces, hyphens, dashes, quotes (3-100 chars)
+    'name_en': r'^[a-zA-Z\d\s\-–—\'\"«»]{3,100}$',
+    'name_ru': r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„"]{3,100}$',
+    'name_he': r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳]{3,100}$',
 
     # Addresses: letters, digits, basic punctuation (5-200 chars)
     'address_en': r'^[a-zA-Z\s\d,./\-]{5,200}$',
@@ -59,6 +68,61 @@ VENUE_PATTERNS = {
     'email': r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
     'website': r'^https?:\/\/(www\.)?[\-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([\-a-zA-Z0-9@:%_\+.~#?&//=]*)$'
 }
+
+# Event
+PRICE_TYPES = ['free', 'tba', 'fixed', 'starting_from']
+
+PRICE_TYPE_TRANSLATIONS = {
+    'free': {
+        'en': 'Free',
+        'ru': 'Бесплатно',
+        'he': 'חינם'
+    },
+    'tba': {
+        'en': 'TBA',
+        'ru': 'Уточняется',
+        'he': 'יפורסם בהמשך'
+    },
+    'fixed': {
+        'en': 'Fixed price',
+        'ru': 'Фиксированная цена',
+        'he': 'מחיר קבוע'
+    },
+    'starting_from': {
+        'en': 'From',
+        'ru': 'От',
+        'he': 'החל מ'
+    }
+}
+
+ALLOWED_EVENT_GET_ALL_ARGS = {
+    "lang", "is_active"
+}
+
+ALLOWED_EVENT_CREATE_BODY_PARAMS = {
+    "name_en", "name_ru", "name_he",
+    "description_en", "description_ru", "description_he",
+    "venue_slug", "event_type_slug",
+    "start_date", "end_date",
+    "price_type", "price_amount"
+}
+
+STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS = {
+    "venue_slug", "event_type_slug", "start_date", "end_date", "price_type"
+}
+
+EVENT_PATTERNS = {
+    # Names
+    'name_en': r'^[a-zA-Z\d\s\-–—\'\"«»]+$',
+    'name_ru': r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„"]+$',
+    'name_he': r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳]+$',
+
+    # Descriptions
+    'description_en': r'^[a-zA-Z\d\s\-–—.,!?()\'\"«»:\[\];]+$',
+    'description_ru': r'^[а-яА-ЯёЁ\d\s\-–—.,!?()\'\"«»„":\[\];]+$',
+    'description_he': r'^[\u0590-\u05FF\d\s\-–—.,!?()\'\"«»״׳:\[\];]+$',
+}
+
 
 # Event type
 ALLOWED_EVENT_TYPE_BODY_PARAMS = {'name_en', 'name_ru', 'name_he'}

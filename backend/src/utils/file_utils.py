@@ -4,7 +4,7 @@ import shutil
 from werkzeug.utils import secure_filename
 from PIL import Image
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.constants import ALLOWED_IMG_EXTENSIONS, UPLOAD_FOLDER
+from backend.src.utils.constants import ALLOWED_IMG_EXTENSIONS, UPLOAD_FOLDER, IMAGE_PATHS
 from .exceptions import ConfigurationError
 
 
@@ -41,19 +41,19 @@ def validate_image(file):
         raise UserError("Invalid image file")
 
 
-def save_venue_image(file, venue_slug):
-    venue_dir = os.path.join(UPLOAD_FOLDER, 'img', 'venues', venue_slug)
-    os.makedirs(venue_dir, exist_ok=True)
+def save_image_from_request(file, entity_name, slug):
+    img_dir = os.path.join(UPLOAD_FOLDER, 'img', entity_name, slug)
+    os.makedirs(img_dir, exist_ok=True)
 
-    filename = secure_filename(f"{venue_slug}.png")
-    file_path = os.path.join(venue_dir, filename)
+    filename = secure_filename(f"{slug}.png")
+    file_path = os.path.join(img_dir, filename)
 
     img = Image.open(file)
     img = img.convert('RGBA')
     img = img.resize((400, 400))
     img.save(file_path, 'PNG')
 
-    return f"/uploads/img/venues/{venue_slug}/{filename}"
+    return IMAGE_PATHS[entity_name].format(slug=slug, filename=filename)
 
 
 def delete_folder_from_path(image_path):

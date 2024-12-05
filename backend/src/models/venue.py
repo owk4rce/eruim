@@ -3,64 +3,14 @@ from mongoengine import Document, StringField, ReferenceField, PointField, URLFi
 
 class Venue(Document):
     """
-       Represents a venue/location where events take place with multilingual support.
 
-       This model stores venue details including names, addresses, descriptions in three languages
-       (Russian, English, Hebrew), as well as location coordinates, contact information and other
-       venue-specific attributes.
-
-       Attributes:
-           name_ru (str): Venue name in Russian. Must contain only Russian letters, spaces, and hyphens.
-           name_en (str): Venue name in English. Must contain only English letters, spaces, and hyphens.
-           name_he (str): Venue name in Hebrew. Must contain only Hebrew letters, spaces, and hyphens.
-           address_ru (str): Physical address in Russian, 5-200 characters.
-           address_en (str): Physical address in English, 5-200 characters.
-           address_he (str): Physical address in Hebrew, 5-200 characters.
-           description_ru (str): Venue description in Russian, 20-1000 characters.
-           description_en (str): Venue description in English, 20-1000 characters.
-           description_he (str): Venue description in Hebrew, 20-1000 characters.
-           city (City): Reference to the City model where venue is located.
-           location (tuple): GeoJSON point coordinates [longitude, latitude].
-           website (str, optional): Venue's website URL.
-           phone (str, optional): Contact phone number (9-15 digits, may start with +).
-           email (str, optional): Contact email address.
-           is_active (bool): Whether the venue is currently active. Defaults to True.
-           image_path (str): Path to venue's image. Defaults to default.png.
-           slug (str): URL-friendly version of the venue name. Must be unique.
-
-       Validation Rules:
-           - All names:
-               - Required, 3-100 characters
-               - Language-specific character sets
-           - All addresses:
-               - Required, 5-200 characters
-           - All descriptions:
-               - Required, 20-1000 characters
-           - Location coordinates and city reference are required
-           - Phone must match international format
-           - Image path must follow specific pattern
-           - Slug must be unique, max 100 characters
-
-       Example:
-           >>> venue = Venue(
-           ...     name_en="Symphony Hall",
-           ...     name_ru="Симфонический Зал",
-           ...     name_he="היכל הסימפוניה",
-           ...     address_en="123 Music Street, Jerusalem",
-           ...     address_ru="улица Музыки 123, Иерусалим",
-           ...     address_he="רחוב המוזיקה 123, ירושלים",
-           ...     description_en="A premier concert venue...",
-           ...     city=city_obj,
-           ...     location=[34.781769, 32.085300],
-           ...     slug="symphony-hall"
-           ... )
     """
     name_ru = StringField(
         required=True,
         unique=True,
         min_length=3,
         max_length=100,
-        regex=r'^[а-яА-ЯёЁ\s\-]+$'
+        regex=r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„"]+$'
     )
 
     name_en = StringField(
@@ -68,7 +18,7 @@ class Venue(Document):
         unique=True,
         min_length=3,
         max_length=100,
-        regex=r'^[a-zA-Z\s\-]+$'
+        regex=r'^[a-zA-Z\d\s\-–—\'\"«»]+$'
     )
 
     name_he = StringField(
@@ -76,7 +26,7 @@ class Venue(Document):
         unique=True,
         min_length=3,
         max_length=100,
-        regex=r'^[\u0590-\u05FF\s\-]+$'
+        regex=r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳]+$'
     )
 
     address_ru = StringField(

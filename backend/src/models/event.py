@@ -1,5 +1,8 @@
-from mongoengine import Document, StringField, ValidationError, DateTimeField, ReferenceField, IntField, BooleanField, CASCADE
+import pytz
+from mongoengine import Document, StringField, ValidationError, DateTimeField, ReferenceField, IntField, BooleanField, \
+    CASCADE
 from datetime import datetime
+from backend.src.utils.constants import PRICE_TYPE_TRANSLATIONS, TIMEZONE
 
 
 class Event(Document):
@@ -7,105 +10,61 @@ class Event(Document):
         required=True,
         min_length=3,
         max_length=200,
-        regex=r'^[а-яА-ЯёЁ\s-]+$',
-        error_messages={
-            'required': 'Russian event name is required',
-            'min_length': 'Russian name must be at least 3 characters long',
-            'max_length': 'Russian name cannot be longer than 200 characters',
-            'regex': 'Only Russian letters, spaces and hyphens are allowed'
-        }
+        regex=r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„"]+$'
     )
 
     name_en = StringField(
         required=True,
         min_length=3,
         max_length=200,
-        regex=r'^[a-zA-Z\s-]+$',
-        error_messages={
-            'required': 'English event name is required',
-            'min_length': 'English name must be at least 3 characters long',
-            'max_length': 'English name cannot be longer than 200 characters',
-            'regex': 'Only English letters, spaces and hyphens are allowed'
-        }
+        regex=r'^[a-zA-Z\d\s\-–—\'\"«»]+$'
     )
 
     name_he = StringField(
         required=True,
         min_length=3,
         max_length=200,
-        regex=r'^[\u0590-\u05FF\s-]+$',
-        error_messages={
-            'required': 'Hebrew event name is required',
-            'min_length': 'Hebrew name must be at least 3 characters long',
-            'max_length': 'Hebrew name cannot be longer than 200 characters',
-            'regex': 'Only Hebrew letters, spaces and hyphens are allowed'
-        }
+        regex=r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳]+$'
     )
 
     description_ru = StringField(
         required=True,
         min_length=20,
         max_length=2000,
-        error_messages={
-            'required': 'Russian description is required',
-            'min_length': 'Russian description must be at least 20 characters long',
-            'max_length': 'Russian description cannot be longer than 2000 characters'
-        }
+        regex=r'^[а-яА-ЯёЁ\d\s\-–—.,!?()\'\"«»„":\[\];]+$'
     )
 
     description_en = StringField(
         required=True,
         min_length=20,
         max_length=2000,
-        error_messages={
-            'required': 'English description is required',
-            'min_length': 'English description must be at least 20 characters long',
-            'max_length': 'English description cannot be longer than 2000 characters'
-        }
+        regex=r'^[a-zA-Z\d\s\-–—.,!?()\'\"«»:\[\];]+$'
     )
 
     description_he = StringField(
         required=True,
         min_length=20,
         max_length=2000,
-        error_messages={
-            'required': 'Hebrew description is required',
-            'min_length': 'Hebrew description must be at least 20 characters long',
-            'max_length': 'Hebrew description cannot be longer than 2000 characters'
-        }
+        regex=r'^[\u0590-\u05FF\d\s\-–—.,!?()\'\"«»״׳:\[\];]+$'
     )
 
     start_date = DateTimeField(
-        required=True,
-        error_messages={
-            'required': 'Start date is required'
-        }
+        required=True
     )
 
     end_date = DateTimeField(
-        required=True,
-        error_messages={
-            'required': 'End date is required'
-        }
+        required=True
     )
 
     venue = ReferenceField(
         'Venue',
         required=True,
-        index=True,
-        reverse_delete_rule=CASCADE,
-        error_messages={
-            'required': 'Venue reference is required'
-        }
+        reverse_delete_rule=CASCADE
     )
 
     event_type = ReferenceField(
         'EventType',
-        required=True,
-        index=True,
-        error_messages={
-            'required': 'Event type reference is required'
-        }
+        required=True
     )
 
     is_active = BooleanField(
@@ -114,27 +73,24 @@ class Event(Document):
 
     price_type = StringField(
         required=True,
-        choices=['free', 'tba', 'fixed', 'starting_from'],
-        error_messages={
-            'required': 'Price type is required',
-            'choices': 'Invalid price type'
-        }
+        choices=['free', 'tba', 'fixed', 'starting_from']
     )
 
     price_amount = IntField(
         min_value=0,
-        error_messages={
-            'min_value': 'Price amount cannot be negative'
-        }
+        default=None,
     )
 
     image_path = StringField(
         required=True,
-        regex=r'^/uploads/img/events/[\w-]+/[\w-]+\.png$',
-        error_messages={
-            'required': 'Image path is required',
-            'regex': 'Invalid image path format. Should be /uploads/img/events/event-slug/event-slug.png'
-        }
+        default='/uploads/img/events/default/default.png',
+        regex=r'^/uploads/img/events/[\w-]+/[\w-]+\.png$'
+    )
+
+    slug = StringField(
+        required=True,
+        unique=True,
+        max_length=100
     )
 
     meta = {
@@ -146,7 +102,8 @@ class Event(Document):
             'venue',
             'event_type',
             'start_date',
-            'is_active'
+            'is_active',
+            "slug"
         ]
     }
 
@@ -176,7 +133,95 @@ class Event(Document):
 
     def get_formatted_time(self):
         """Get formatted time string based on event type"""
+
+        start_local = pytz.utc.localize(self.start_date).astimezone(TIMEZONE)
+        end_local = pytz.utc.localize(self.end_date).astimezone(TIMEZONE)
+
         if self.is_single_day_event:
-            return f"{self.start_date.strftime('%H:%M')} - {self.end_date.strftime('%H:%M')}"
+            return f"{start_local.strftime('%H:%M')} - {end_local.strftime('%H:%M')}"
         else:
-            return f"{self.start_date.strftime('%d.%m.%Y')} - {self.end_date.strftime('%d.%m.%Y')}"
+            return f"{start_local.strftime('%d.%m.%Y')} - {end_local.strftime('%d.%m.%Y')}"
+
+    def _format_price(self, lang='en'):
+        """Format price based on price_type in specified language"""
+        price_name = PRICE_TYPE_TRANSLATIONS[self.price_type][lang]
+
+        if self.price_type == 'free':
+            return price_name
+        elif self.price_type == 'tba':
+            return price_name
+        elif self.price_type == 'fixed':
+            return f"{self.price_amount}₪"
+        elif self.price_type == 'starting_from':
+            return f"{price_name} {self.price_amount}₪"
+
+    def to_response_dict(self, lang=None):
+        """Convert venue to API response format"""
+
+        start_local = pytz.utc.localize(self.start_date).astimezone(TIMEZONE)
+        end_local = pytz.utc.localize(self.end_date).astimezone(TIMEZONE)
+
+        if not lang:
+            return {
+                "name_ru": self.name_ru,
+                "name_en": self.name_en,
+                "name_he": self.name_he,
+                "description_en": self.description_en,
+                "description_he": self.description_he,
+                "description_ru": self.description_ru,
+                "time": {
+                    "start": {
+                        "format": start_local.strftime('%d.%m.%Y %H:%M'),
+                        "local": start_local.strftime('%a, %d %b %Y %H:%M:%S %z'),
+                        "utc": self.start_date
+                    },
+                    "end": {
+                        "format": end_local.strftime('%d.%m.%Y %H:%M'),
+                        "local": end_local.strftime('%a, %d %b %Y %H:%M:%S %z'),
+                        "utc": self.end_date
+                    },
+                    "format": self.get_formatted_time()
+                },
+                "venue": self.venue.to_response_dict(),
+                "event_type": self.event_type.to_response_dict(),
+                "price": {
+                    "type": self.price_type,
+                    "amount": self.price_amount,
+                    "format": {
+                        "en": self._format_price('en'),
+                        "ru": self._format_price('ru'),
+                        "he": self._format_price('he')
+                    }
+                },
+                "is_active": self.is_active,
+                "image_path": self.image_path,
+                "slug": self.slug
+            }
+        else:
+            return {
+                "name": self.get_name(lang),
+                "description": self.get_description(lang),
+                "time": {
+                    "start": {
+                        "format": start_local.strftime('%d.%m.%Y %H:%M'),
+                        "local": start_local.strftime('%a, %d %b %Y %H:%M:%S %z'),
+                        "utc": self.start_date
+                    },
+                    "end": {
+                        "format": end_local.strftime('%d.%m.%Y %H:%M'),
+                        "local": end_local.strftime('%a, %d %b %Y %H:%M:%S %z'),
+                        "utc": self.end_date
+                    },
+                    "format": self.get_formatted_time()
+                },
+                "venue": self.venue.to_response_dict(lang),
+                "event_type": self.event_type.to_response_dict(lang),
+                "price": {
+                    "type": self.price_type,
+                    "amount": self.price_amount,
+                    "format": self._format_price(lang)
+                },
+                "is_active": self.is_active,
+                "image_path": self.image_path,
+                "slug": self.slug
+            }
