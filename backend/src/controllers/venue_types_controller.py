@@ -1,5 +1,6 @@
 from flask import request, jsonify
 from slugify import slugify
+
 from backend.src.models.venue import Venue
 from backend.src.models.venue_type import VenueType
 from backend.src.services.translation_service import translate_with_google
@@ -12,8 +13,8 @@ def get_all_venue_types():
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -40,8 +41,8 @@ def get_existing_venue_type(slug):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -70,47 +71,16 @@ def get_existing_venue_type(slug):
 
 def create_new_venue_type():
     """
-    Create new venue type with automatic translation of missing names.
 
-    Request Body:
-        JSON object with at least one name field (required):
-        - name_en (str, optional): Name in English
-        - name_ru (str, optional): Name in Russian
-        - name_he (str, optional): Name in Hebrew
-
-        Example (minimum valid request):
-            {
-                "name_en": "Concert"
-            }
-            or
-            {
-                "name_ru": "Концерт"
-            }
-            or
-            {
-                "name_he": "קונצרט"
-            }
-
-        Missing names will be auto-translated from the provided one.
-
-    Returns:
-        tuple: (JSON response, status code)
-            - response format:
-                {
-                    "status": "success",
-                    "message": str
-                }
-            - status codes:
-                201: created successfully
-                400: validation error (missing all name fields/wrong format)
-                415: wrong content type
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     unknown_params = set(data.keys()) - ALLOWED_VENUE_TYPE_BODY_PARAMS
     if unknown_params:
@@ -169,24 +139,16 @@ def create_new_venue_type():
 
 def full_update_existing_venue_type(slug):
     """
-    Update existing venue type
 
-    Query Body Parameters:
-        - name_en (str, required): Name in English
-        - name_ru (str, required): Name in Russian
-        - name_he (str, required): Name in Hebrew
-
-    Returns:
-        JSON response with:
-        - status: success/error
-        - message: venue type updated
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     # Find existing venue type
     venue_type = VenueType.objects(slug=slug).first()
@@ -231,12 +193,14 @@ def part_update_existing_venue_type(slug):
         - status: success/error
         - message: venue type updated
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     # Find existing venue type
     venue_type = VenueType.objects(slug=slug).first()
@@ -294,8 +258,8 @@ def delete_existing_venue_type(slug):
 
         204
     """
-    if request.data:
-        raise UserError("Using body in DELETE-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in DELETE-method is restricted.")
 
     # Find existing venue type
     venue_type = VenueType.objects(slug=slug).first()

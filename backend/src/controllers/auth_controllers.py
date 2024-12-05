@@ -9,12 +9,14 @@ from backend.src.utils.pre_mongo_validators import validate_user_data
 
 
 def register_new_user():
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     unknown_params = set(data.keys()) - ALLOWED_AUTH_BODY_PARAMS
     if unknown_params:
@@ -28,7 +30,7 @@ def register_new_user():
 
     # Check if email already exists
     if User.objects(email=data['email']).first():
-        raise UserError("User with this email already exists", 409)
+        raise UserError("User with this email already exists.", 409)
 
     # Create user
     user = User(
@@ -46,7 +48,7 @@ def register_new_user():
     # Create response
     response = jsonify({
         'status': 'success',
-        'message': 'Registration successful',
+        'message': 'Registration successful.',
         'data': user.to_response_dict()
     })
 
@@ -64,12 +66,14 @@ def register_new_user():
 
 
 def existing_user_login():
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     unknown_params = set(data.keys()) - REQUIRED_AUTH_BODY_PARAMS
     if unknown_params:
@@ -82,15 +86,15 @@ def existing_user_login():
     # Find user by email
     user = User.objects(email=data["email"]).first()
     if not user:
-        raise UserError("Invalid email or password", 401)
+        raise UserError("Invalid email or password.", 401)
 
     # Verify password
     if not user.verify_password(data["password"]):
-        raise UserError("Invalid email or password", 401)
+        raise UserError("Invalid email or password.", 401)
 
     # Check if user is active
     if not user.is_active:
-        raise UserError("Account is inactive", 403)
+        raise UserError("Account is inactive.", 403)
 
     # Create access token
     access_token = create_access_token(identity=str(user.id))
@@ -102,7 +106,7 @@ def existing_user_login():
     # Create response
     response = jsonify({
         "status": "success",
-        "message": "Login successful",
+        "message": "Login successful.",
         "data": user.to_response_dict()
     })
 
@@ -126,12 +130,12 @@ def user_logout():
     Returns:
         Success message
     """
-    if request.data:
-        raise UserError("Using body in this request is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in this request is restricted.")
 
     response = jsonify({
         'status': 'success',
-        'message': 'Logout successful'
+        'message': 'Logout successful.'
     })
 
     # Remove token cookie

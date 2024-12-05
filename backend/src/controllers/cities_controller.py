@@ -13,8 +13,8 @@ def get_all_cities():
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -42,8 +42,8 @@ def get_existing_city(slug):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -82,12 +82,14 @@ def create_new_city():
         - status: success/error
         - message: new city created
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     if len(data) != 1 or "name_en" not in data:
         raise UserError("Body of request must contain only 'name_en' parameter.")
@@ -125,8 +127,8 @@ def delete_existing_city(slug):
 
         204
     """
-    if request.data:
-        raise UserError("Using body in DELETE-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in DELETE-method is restricted.")
 
     # Find existing city
     city = City.objects(slug=slug).first()

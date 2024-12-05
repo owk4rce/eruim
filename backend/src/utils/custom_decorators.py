@@ -3,7 +3,6 @@ from flask_jwt_extended import get_jwt_identity
 from functools import wraps
 
 from backend.src.utils.exceptions import UserError
-from backend.src.models.user import User
 
 
 # Auth decorators
@@ -11,6 +10,8 @@ def check_active_user():
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            from backend.src.models.user import User    # to avoid cyclic imports
+
             current_user_id = get_jwt_identity()
             user = User.objects(id=current_user_id).first()
 
@@ -44,6 +45,8 @@ def admin_required():
         @wraps(f)
         @check_active_user()  # even admin could be inactive
         def decorated_function(*args, **kwargs):
+            from backend.src.models.user import User  # to avoid cyclic imports
+
             current_user_id = get_jwt_identity()
             user = User.objects(id=current_user_id).first()
 
@@ -62,6 +65,8 @@ def manager_required():
         @wraps(f)
         @check_active_user()  # even manager could be inactive
         def decorated_function(*args, **kwargs):
+            from backend.src.models.user import User  # to avoid cyclic imports
+
             current_user_id = get_jwt_identity()
             user = User.objects(id=current_user_id).first()
 

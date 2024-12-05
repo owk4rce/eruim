@@ -131,6 +131,7 @@ class User(Document):
             "favorite_events": [
                 event.to_response_dict(self.default_lang) for event in self.favorite_events
             ],
+            "default_lang": self.default_lang,
             "created_at": self.created_at,
             "last_login": self.last_login
         }
@@ -142,6 +143,7 @@ class User(Document):
             "favorite_events": [
                 event.to_response_dict(self.default_lang) for event in self.favorite_events
             ],
+            "default_lang": self.default_lang
         }
 
     def clean(self):

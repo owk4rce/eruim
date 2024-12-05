@@ -1,5 +1,6 @@
 from flask import request, jsonify
 from slugify import slugify
+
 from backend.src.services.translation_service import translate_with_google
 from backend.src.utils.constants import ALLOWED_EVENT_TYPE_BODY_PARAMS, SUPPORTED_LANGUAGES
 from backend.src.utils.exceptions import UserError
@@ -12,8 +13,8 @@ def get_all_event_types():
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -40,8 +41,8 @@ def get_existing_event_type(slug):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -72,12 +73,14 @@ def create_new_event_type():
     """
 
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     unknown_params = set(data.keys()) - ALLOWED_EVENT_TYPE_BODY_PARAMS
     if unknown_params:
@@ -148,12 +151,14 @@ def full_update_existing_event_type(slug):
         - status: success/error
         - message: event type updated
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     # Find existing event type
     event_type = EventType.objects(slug=slug).first()
@@ -198,12 +203,14 @@ def part_update_existing_event_type(slug):
         - status: success/error
         - message: event type updated
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     # Find existing event type
     event_type = EventType.objects(slug=slug).first()
@@ -261,8 +268,8 @@ def delete_existing_event_type(slug):
 
         204
     """
-    if request.data:
-        raise UserError("Using body in DELETE-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in DELETE-method is restricted.")
 
     # Find existing event type
     event_type = EventType.objects(slug=slug).first()

@@ -12,11 +12,11 @@ def get_user_profile():
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
-
-    if request.args:
-        raise UserError(f"Arguments in this request are restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
+    #
+    # if request.args:
+    #     raise UserError(f"Arguments in this request are restricted.")
 
     # getting user id from jwt
     current_user_id = get_jwt_identity()
@@ -39,12 +39,14 @@ def full_update_user_profile():
     """
 
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     # getting user id from jwt
     current_user_id = get_jwt_identity()
@@ -82,12 +84,14 @@ def part_update_user_profile():
     """
 
     """
-    if not request.is_json:
-        raise UserError("Content-Type must be application/json.", 415)
+    # if not request.is_json:
+    #     raise UserError("Content-Type must be application/json.", 415)
+    #
+    # data = request.get_json()
+    # if not data:
+    #     raise UserError("Body parameters are missing.")
 
     data = request.get_json()
-    if not data:
-        raise UserError("Body parameters are missing.")
 
     # getting user id from jwt
     current_user_id = get_jwt_identity()
@@ -143,8 +147,8 @@ def add_event_to_favorites(event_slug):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in this request is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in this request is restricted.")
 
     # getting user id from jwt
     current_user_id = get_jwt_identity()
@@ -180,8 +184,8 @@ def remove_event_from_favorites(event_slug):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in DELETE-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in DELETE-method is restricted.")
 
     # getting user id from jwt
     current_user_id = get_jwt_identity()

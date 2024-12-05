@@ -8,8 +8,8 @@ from backend.src.services.here_service import validate_and_get_location
 from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.file_utils import validate_image, save_venue_image, delete_folder_from_path
-from backend.src.utils.constants import (STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS, \
-                                         SUPPORTED_LANGUAGES, ALLOWED_VENUE_CREATE_BODY_PARAMS, VENUE_PATTERNS,
+from backend.src.utils.constants import (STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS,
+                                         SUPPORTED_LANGUAGES, ALLOWED_VENUE_CREATE_BODY_PARAMS,
                                          ALLOWED_VENUE_UPDATE_BODY_PARAMS)
 from backend.src.utils.pre_mongo_validators import validate_venue_data
 from backend.src.utils.transliteration import transliterate_en_to_he, transliterate_en_to_ru
@@ -20,8 +20,8 @@ def get_all_venues():
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - ALLOWED_VENUE_GET_ALL_ARGS
     if unknown_args:
@@ -64,8 +64,8 @@ def get_existing_venue(slug):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in GET-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in GET-method is restricted.")
 
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -270,12 +270,12 @@ def full_update_existing_venue(slug):
         if not data:
             raise UserError("Form data is empty")
 
-        if "is_active" in data:                 # converting str to bool if it matches
+        if "is_active" in data:  # converting str to bool if it matches
             match data["is_active"].lower():
                 case "true":
-                    data["is_active"] = True    # type: ignore
+                    data["is_active"] = True  # type: ignore
                 case "false":
-                    data["is_active"] = False   # type: ignore
+                    data["is_active"] = False  # type: ignore
                 case _:
                     raise UserError("Parameter 'is_active' must be 'true' or 'false'")
 
@@ -400,12 +400,12 @@ def part_update_existing_venue(slug):
         if not data and not file:
             raise UserError("Neither form data nor file provided.")
 
-        if "is_active" in data:                 # converting str to bool if it matches
+        if "is_active" in data:  # converting str to bool if it matches
             match data["is_active"].lower():
                 case "true":
-                    data["is_active"] = True    # type: ignore
+                    data["is_active"] = True  # type: ignore
                 case "false":
-                    data["is_active"] = False   # type: ignore
+                    data["is_active"] = False  # type: ignore
                 case _:
                     raise UserError("Parameter 'is_active' must be 'true' or 'false'")
     elif not request.is_json:
@@ -583,8 +583,8 @@ def delete_existing_venue(slug):
     """
 
     """
-    if request.data:
-        raise UserError("Using body in DELETE-method is restricted.")
+    # if request.data:
+    #     raise UserError("Using body in DELETE-method is restricted.")
 
     # Find existing venue type
     venue = Venue.objects(slug=slug).first()
@@ -605,4 +605,3 @@ def delete_existing_venue(slug):
 
     # Return 204 No Content for successful deletion
     return '', 204
-
