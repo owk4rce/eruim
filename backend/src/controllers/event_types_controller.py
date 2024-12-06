@@ -30,7 +30,8 @@ def get_all_event_types():
 
     return jsonify({
         "status": "success",
-        "data": event_types_data
+        "data": event_types_data,
+        "count": len(event_types_data)
     }), 200
 
 
@@ -72,6 +73,12 @@ def create_new_event_type():
     unknown_params = set(data.keys()) - ALLOWED_EVENT_TYPE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
+
+    if "name_en" in data:
+        data["name_en"] = data["name_en"].lower()
+
+    if "name_ru" in data:
+        data["name_ru"] = data["name_ru"].lower()
 
     validate_event_type_data(data)  # pre-mongo validation
 
@@ -153,14 +160,23 @@ def full_update_existing_event_type(slug):
     if missing_params:
         raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
+    data["name_en"] = data["name_en"].lower()
+    data["name_ru"] = data["name_ru"].lower()
+
     validate_event_type_data(data)  # pre-mongo validation
 
-    event_type.name_en = data["name_en"]
-    event_type.name_he = data["name_he"]
-    event_type.name_ru = data["name_ru"]
-    event_type.slug = slugify(data["name_en"])
+    update_data = {
+        "set__name_en": data["name_en"],
+        "set__name_ru": data["name_ru"],
+        "set__name_he": data["name_he"],
+        "set__slug": slugify(data["name_en"])
+    }
 
-    event_type.save()
+    # atomic update
+    EventType.objects(slug=slug).update_one(**update_data)
+
+    # reload to get new for response
+    event_type.reload()
 
     return jsonify({
         "status": "success",

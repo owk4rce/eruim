@@ -342,7 +342,7 @@ def full_update_existing_venue(slug):
         "set__is_active": is_active,
         "set__venue_type": venue_type,
         "set__city": city,
-        "set__slug": slugify(data["name_en"]),
+        "set__slug": slugify(data["name_en"])
     }
 
     if venue.address_en != data['address_en']:

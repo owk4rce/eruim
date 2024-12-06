@@ -42,10 +42,6 @@ STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS = {
     "address_en", "city_en", "venue_type_en"
 }
 
-OPTIONAL_VENUE_BODY_PARAMS = [
-    "website", "phone", "email"
-]
-
 VENUE_PATTERNS = {
     # Names: letters, digits, spaces, hyphens, dashes, quotes (3-100 chars)
     'name_en': r'^[a-zA-Z\d\s\-–—\'\"«»]{3,100}$',
@@ -140,8 +136,8 @@ EVENT_PATTERNS = {
 ALLOWED_EVENT_TYPE_BODY_PARAMS = {'name_en', 'name_ru', 'name_he'}
 
 EVENT_TYPE_PATTERNS = {
-    'name_en': r'^[a-zA-Z\s-]{3,20}$',
-    'name_ru': r'^[а-яА-ЯёЁ\s-]{3,20}$',
+    'name_en': r'^[a-z\s-]{3,20}$',
+    'name_ru': r'^[а-яё\s-]{3,20}$',
     'name_he': r'^[\u0590-\u05FF\s-]{3,20}$'
 }
 
@@ -153,8 +149,8 @@ ALLOWED_VENUE_TYPE_GET_ALL_ARGS = {
 ALLOWED_VENUE_TYPE_BODY_PARAMS = {'name_en', 'name_ru', 'name_he'}
 
 VENUE_TYPE_PATTERNS = {
-    'name_en': r'^[a-zA-Z\s\-]{2,30}$',
-    'name_ru': r'^[а-яА-ЯёЁ\s\-]{2,30}$',
+    'name_en': r'^[a-z\s-]{2,30}$',
+    'name_ru': r'^[а-яё\s-]{2,30}$',
     'name_he': r'^[\u0590-\u05FF\s\-]{2,30}$'
 }
 
