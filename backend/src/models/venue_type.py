@@ -10,7 +10,7 @@ class VenueType(Document):
         unique=True,
         min_length=2,
         max_length=30,
-        regex=r'^[а-яА-ЯёЁ\s\-]+$'
+        regex=r'^[а-яё\s-]+$'
     )
 
     name_en = StringField(
@@ -18,7 +18,7 @@ class VenueType(Document):
         unique=True,
         min_length=2,
         max_length=30,
-        regex=r'^[a-zA-Z\s\-]+$'
+        regex=r'^[a-z\s-]+$'
     )
 
     name_he = StringField(
