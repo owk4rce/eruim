@@ -12,6 +12,9 @@ IMAGE_PATHS = {
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads')
 
+# Add logs path
+LOGS_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
+
 SUPPORTED_LANGUAGES = ["en", "ru", "he"]
 DEFAULT_LANGUAGE = "en"
 

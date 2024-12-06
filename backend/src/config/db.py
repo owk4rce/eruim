@@ -1,5 +1,7 @@
 from mongoengine import connect
+
 from backend.src.utils.exceptions import ConfigurationError
+# from backend.src.config.logger import logger
 
 
 def connect_db(app):
@@ -19,6 +21,6 @@ def connect_db(app):
 
         return connection
     except Exception as e:
-        error_message = f"Failed to connect to MongoDB: {str(e)}"
-        print(error_message)  # log
+        error_message = f"Database connection failed: {str(e)}"
+        print(error_message)
         raise ConfigurationError(error_message)
