@@ -49,13 +49,25 @@ def get_all_events():
                 raise UserError("Parameter 'is_active' must be 'true' or 'false'")
 
     city_slug_arg = request.args.get("city")
+    venue_slug_arg = request.args.get("venue")
+
+    if city_slug_arg and venue_slug_arg:
+        raise UserError("Only one argument, 'city' or 'venue', is allowed. ")
+
     if city_slug_arg:
         city = City.objects(slug=city_slug_arg).first()
         if not city:
-            raise UserError(f"City with slug '{city_slug_arg}' not found", 404)
+            raise UserError(f"City with slug '{city_slug_arg}' not found.", 404)
 
         venues = Venue.objects(city=city)
         query["venue__in"] = venues
+
+    if venue_slug_arg:
+        venue = Venue.objects(slug=venue_slug_arg).first()
+        if not venue:
+            raise UserError(f"Venue with slug '{venue_slug_arg}' not found.", 404)
+
+        query["venue"] = venue
 
     # Get events from database with filters
     events = Event.objects(**query)

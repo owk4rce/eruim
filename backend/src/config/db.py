@@ -3,13 +3,22 @@ import logging
 
 from backend.src.utils.exceptions import ConfigurationError
 
+logger = logging.getLogger('backend')
+
 
 def connect_db(app):
     """
+    Connect to MongoDB using configuration from Flask app.
 
+    Args:
+        app: Flask application instance with config containing DB_NAME and DB_PATH
+
+    Returns:
+        mongoengine.connection: Database connection object
+
+    Raises:
+        ConfigurationError: If connection fails or MongoDB URL is invalid
     """
-    logger = logging.getLogger('backend')
-
     try:
         db_name = app.config["DB_NAME"]
 
@@ -23,6 +32,4 @@ def connect_db(app):
 
         return connection
     except Exception as e:
-        error_message = f"Database connection failed: {str(e)}"
-        print(error_message)
-        raise ConfigurationError(error_message)
+        raise ConfigurationError(f"Database connection failed: {str(e)}")

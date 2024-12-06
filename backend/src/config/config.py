@@ -5,7 +5,18 @@ from backend.src.utils.exceptions import ConfigurationError
 
 
 def load_config():
-    """Load configuration from environment variables"""
+    """
+    Load application configuration from environment variables.
+
+    Validates presence of required environment variables and returns config dict
+    with database, JWT, API keys and application settings.
+
+    Returns:
+        dict: Application configuration settings
+
+    Raises:
+        ConfigurationError: If any required environment variables are missing
+    """
     load_dotenv()
 
     # required env vars
@@ -51,5 +62,5 @@ def load_config():
 
         # App settings
         "DEBUG": os.getenv("DEBUG", "False").lower() == "true",
-        "MAX_FILE_SIZE": int(os.getenv("MAX_FILE_SIZE", 5_242_880))
+        "MAX_FILE_SIZE": int(os.getenv("MAX_FILE_SIZE", 5_242_880))     # Default 5MB
     }

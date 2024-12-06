@@ -29,10 +29,11 @@ except Exception as e:
 app.url_map.strict_slashes = False  # no need for the end slash in endpoint
 
 CORS(app)
-public_routes_limiter.init_app(app)
-protected_routes_limiter.init_app(app)
-
 jwt = JWTManager(app)
+
+if not app.config.get('TESTING', False):
+    public_routes_limiter.init_app(app)
+    protected_routes_limiter.init_app(app)
 
 
 @jwt.unauthorized_loader

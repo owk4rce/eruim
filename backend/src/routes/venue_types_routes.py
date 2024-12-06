@@ -1,6 +1,7 @@
 from flask import Blueprint
 from flask_jwt_extended import jwt_required
 
+from backend.src.config.limiter import public_routes_limit, protected_routes_limit
 from backend.src.controllers.venue_types_controller import get_all_venue_types, create_new_venue_type, \
     full_update_existing_venue_type, part_update_existing_venue_type, delete_existing_venue_type, \
     get_existing_venue_type
@@ -11,6 +12,7 @@ venue_types_bp = Blueprint("venue_types", __name__, url_prefix="/venue_types")
 
 
 @venue_types_bp.route("/", methods=["GET"])
+@public_routes_limit()
 @no_body_in_request()
 def get_venue_types():
     """Handle GET request for retrieving all venue types"""
@@ -18,6 +20,7 @@ def get_venue_types():
 
 
 @venue_types_bp.route("/<slug>", methods=["GET"])
+@public_routes_limit()
 @no_body_in_request()
 def get_venue_type(slug):
     """Handle GET request for retrieving one venue type"""
@@ -27,6 +30,7 @@ def get_venue_type(slug):
 @venue_types_bp.route("/", methods=["POST"])
 @jwt_required()
 @manager_required()
+@protected_routes_limit()
 @require_json()
 @no_args_in_request()
 def create_venue_type():
@@ -37,6 +41,7 @@ def create_venue_type():
 @venue_types_bp.route("/<slug>", methods=["PUT"])
 @jwt_required()
 @manager_required()
+@protected_routes_limit()
 @require_json()
 @no_args_in_request()
 def full_update_venue_type(slug):
@@ -47,6 +52,7 @@ def full_update_venue_type(slug):
 @venue_types_bp.route("/<slug>", methods=["PATCH"])
 @jwt_required()
 @manager_required()
+@protected_routes_limit()
 @require_json()
 @no_args_in_request()
 def part_update_venue_type(slug):
@@ -57,6 +63,7 @@ def part_update_venue_type(slug):
 @venue_types_bp.route("/<slug>", methods=["DELETE"])
 @jwt_required()
 @manager_required()
+@protected_routes_limit()
 @no_body_in_request()
 @no_args_in_request()
 def delete_venue_type(slug):
