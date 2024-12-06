@@ -5,6 +5,7 @@ from flask_talisman import Talisman
 
 from backend.src.config.config import load_config
 from backend.src.config.db import connect_db
+from backend.src.config.limiter import public_routes_limiter, protected_routes_limiter
 from backend.src.config.logger import setup_logger
 from backend.src.routes import api_v1_bp
 from backend.src.utils.error_handlers import register_error_handlers
@@ -28,6 +29,9 @@ except Exception as e:
 app.url_map.strict_slashes = False  # no need for the end slash in endpoint
 
 CORS(app)
+public_routes_limiter.init_app(app)
+protected_routes_limiter.init_app(app)
+
 jwt = JWTManager(app)
 
 

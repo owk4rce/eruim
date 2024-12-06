@@ -9,13 +9,6 @@ from backend.src.utils.pre_mongo_validators import validate_user_data
 
 
 def register_new_user():
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     unknown_params = set(data.keys()) - ALLOWED_AUTH_BODY_PARAMS
@@ -66,13 +59,6 @@ def register_new_user():
 
 
 def existing_user_login():
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     unknown_params = set(data.keys()) - REQUIRED_AUTH_BODY_PARAMS
@@ -130,9 +116,6 @@ def user_logout():
     Returns:
         Success message
     """
-    # if request.data:
-    #     raise UserError("Using body in this request is restricted.")
-
     response = jsonify({
         'status': 'success',
         'message': 'Logout successful.'

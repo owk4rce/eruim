@@ -20,7 +20,7 @@ DEFAULT_LANGUAGE = "en"
 
 # Venue
 ALLOWED_VENUE_GET_ALL_ARGS = {
-    "lang", "is_active"
+    "lang", "is_active", "city"
 }
 
 ALLOWED_VENUE_CREATE_BODY_PARAMS = {
@@ -99,7 +99,7 @@ PRICE_TYPE_TRANSLATIONS = {
 }
 
 ALLOWED_EVENT_GET_ALL_ARGS = {
-    "lang", "is_active"
+    "lang", "is_active", "city"
 }
 
 ALLOWED_EVENT_CREATE_BODY_PARAMS = {

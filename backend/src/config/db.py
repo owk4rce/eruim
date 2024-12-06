@@ -1,13 +1,15 @@
 from mongoengine import connect
+import logging
 
 from backend.src.utils.exceptions import ConfigurationError
-# from backend.src.config.logger import logger
 
 
 def connect_db(app):
     """
 
     """
+    logger = logging.getLogger('backend')
+
     try:
         db_name = app.config["DB_NAME"]
 
@@ -17,7 +19,7 @@ def connect_db(app):
             raise ConfigurationError("Invalid MongoDB URL format. Must start with 'mongodb://' or 'mongodb+srv://'")
 
         connection = connect(db=db_name, host=db_path)
-        print("Connected to MongoDB")  # log
+        logger.info("Successfully connected to MongoDB.")
 
         return connection
     except Exception as e:

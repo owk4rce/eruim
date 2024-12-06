@@ -23,7 +23,7 @@ def setup_logger(app=None, is_initial=False):
 
     # Create formatter
     formatter = logging.Formatter(
-        '%(levelname)s - [%(asctime)s UTC] - %(name)s - %(message)s',
+        '%(levelname)s - [%(asctime)s UTC] - %(name)s - %(module)s:%(lineno)d - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 

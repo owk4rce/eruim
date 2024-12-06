@@ -24,7 +24,6 @@ def get_all_events():
     """
 
     """
-
     unknown_args = set(request.args.keys()) - ALLOWED_EVENT_GET_ALL_ARGS
     if unknown_args:
         raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
@@ -48,6 +47,15 @@ def get_all_events():
                 query["is_active"] = False
             case _:
                 raise UserError("Parameter 'is_active' must be 'true' or 'false'")
+
+    city_slug_arg = request.args.get("city")
+    if city_slug_arg:
+        city = City.objects(slug=city_slug_arg).first()
+        if not city:
+            raise UserError(f"City with slug '{city_slug_arg}' not found", 404)
+
+        venues = Venue.objects(city=city)
+        query["venue__in"] = venues
 
     # Get events from database with filters
     events = Event.objects(**query)
