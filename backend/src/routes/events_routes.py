@@ -2,7 +2,7 @@ from flask import Blueprint
 from flask_jwt_extended import jwt_required
 
 from backend.src.controllers.events_controllers import get_all_events, get_existing_event, create_new_event, \
-    full_update_existing_event
+    full_update_existing_event, part_update_existing_event, delete_existing_event
 from backend.src.utils.custom_decorators import no_body_in_request, manager_required, no_args_in_request
 
 # Create Blueprint for events
@@ -35,21 +35,21 @@ def create_event():
 @no_args_in_request()
 def full_update_event(slug):
     return full_update_existing_event(slug)
-#
-#
-# @venues_bp.route("/<slug>", methods=["PATCH"])
-# @jwt_required()
-# @manager_required()
-# @no_args_in_request()
-# def part_update_venue(slug):
-#     return part_update_existing_venue(slug)
-#
-#
-# @venues_bp.route("/<slug>", methods=["DELETE"])
-# @jwt_required()
-# @manager_required()
-# @no_body_in_request()
-# @no_args_in_request()
-# def delete_venue(slug):
-#     """Handle DELETE request for deleting one venue"""
-#     return delete_existing_venue(slug)
+
+
+@events_bp.route("/<slug>", methods=["PATCH"])
+@jwt_required()
+@manager_required()
+@no_args_in_request()
+def part_update_event(slug):
+    return part_update_existing_event(slug)
+
+
+@events_bp.route("/<slug>", methods=["DELETE"])
+@jwt_required()
+@manager_required()
+@no_body_in_request()
+@no_args_in_request()
+def delete_event(slug):
+    """Handle DELETE request for deleting one venue"""
+    return delete_existing_event(slug)

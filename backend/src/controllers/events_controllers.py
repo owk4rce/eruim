@@ -216,8 +216,8 @@ def create_new_event():
         description_he=description_he,
         event_type=event_type,
         venue=venue,
-        start_date=data["start_date"],
-        end_date=data["end_date"],
+        start_date=TIMEZONE.localize(data["start_date"]),
+        end_date=TIMEZONE.localize(data["end_date"]),
         price_type=data["price_type"],
         price_amount=data.get("price_amount"),
         slug=slugify(f"{name_en}-{slug_date}")
@@ -228,6 +228,7 @@ def create_new_event():
         event.image_path = image_path
 
     event.save()
+    event.reload()  # correct time (while saving it is in our timezone but stores in utc)
 
     return jsonify({
         'status': 'success',
@@ -249,7 +250,7 @@ def full_update_existing_event(slug):
 
         data = request.form.to_dict()
         if not data:
-            raise UserError("Form data is empty")
+            raise UserError("Form data is empty.")
 
         if "is_active" in data:  # converting str to bool if it matches
             match data["is_active"].lower():
@@ -327,7 +328,7 @@ def full_update_existing_event(slug):
         event.image_path = image_path
 
     event.save()
-    event.reload()
+    event.reload()  # correct time (while saving it is in our timezone but stores in utc)
 
     return jsonify({
         'status': 'success',
@@ -336,7 +337,7 @@ def full_update_existing_event(slug):
     }), 200
 
 
-def part_update_existing_venue(slug):
+def part_update_existing_event(slug):
     """
     part update venue
 
@@ -365,6 +366,12 @@ def part_update_existing_venue(slug):
                     data["is_active"] = False  # type: ignore
                 case _:
                     raise UserError("Parameter 'is_active' must be 'true' or 'false'")
+
+        if "price_amount" in data:  # converting str to int if it matches
+            if data["price_amount"].isdigit():
+                data["price_amount"] = int(data["price_amount"])
+            else:
+                raise UserError("Parameter 'price_amount' must be a number.")
     elif not request.is_json:
         raise UserError("Content-Type must be either multipart/form-data or application/json", 415)
     else:
@@ -372,157 +379,78 @@ def part_update_existing_venue(slug):
         if not data:
             raise UserError("JSON body is empty")
 
-    unknown_params = set(data.keys()) - ALLOWED_VENUE_UPDATE_BODY_PARAMS
+    event = Event.objects(slug=slug).first()
+    if not event:
+        raise UserError(f"Event with slug '{slug}' not found", 404)
+
+    unknown_params = set(data.keys()) - ALLOWED_EVENT_UPDATE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    validate_venue_data(data)
+    try:
+        if "start_date" in data and "end_date" not in data:
+            data["start_date"] = datetime.strptime(data["start_date"], '%Y-%m-%d %H:%M')
+            data["end_date"] = event.end_date
+        if "end_date" in data and "start_date" not in data:
+            data["start_date"] = event.start_date
+            data["end_date"] = datetime.strptime(data["end_date"], '%Y-%m-%d %H:%M')
+    except ValueError:
+        raise UserError('Invalid date format. Use YYYY-MM-DD HH:MM')
 
-    venue = Venue.objects(slug=slug).first()
-    if not venue:
-        raise UserError(f"Venue with slug '{slug}' not found", 404)
+    validate_event_data(data)  # we need both of dates or none of them
 
     # Track changes
     updated_fields = []
     unchanged_fields = []
 
     if "image" in request.files:
-        image_path = save_venue_image(file, venue.slug)
-        venue.image_path = image_path
+        image_path = save_image_from_request(file, "events", event.slug)
+        event.image_path = image_path
         updated_fields.append("image_path")
-
-    # ---
 
     for param in data:
         match param:
-            case "is_active":
-                if data["is_active"] != venue.is_active:
-                    if not data["is_active"] and venue.is_active:
-                        active_events = Event.objects(venue=venue, is_active=True).count()
-                        if active_events > 0:
-                            raise UserError(
-                                "Cannot deactivate venue with active events. Please deactivate all events first.",
-                                409
-                            )
-                    setattr(venue, param, data["is_active"])
-                    updated_fields.append("is_active")
-                else:
-                    unchanged_fields.append(param)
-            case "venue_type_en":
-                venue_type = VenueType.objects(name_en=data["venue_type_en"].lower()).first()
+            case "event_type_slug":
+                event_type = EventType.objects(slug=data["event_type_slug"]).first()
 
-                if not venue_type:
-                    raise UserError(f"Venue type '{data['venue_type_en']}' not found", 404)
-                if venue.venue_type != venue_type:
-                    setattr(venue, "venue_type", venue_type)
+                if not event_type:
+                    raise UserError(f"Event type with slug '{data['event_type_slug']}' not found.", 404)
+                if event.event_type != event_type:
+                    setattr(event, "event_type", event_type)
                     updated_fields.append("venue_type")
                 else:
                     unchanged_fields.append(param)
-            case "city_en":
-                # Check if city exists
-                city = City.objects(name_en=data["city_en"]).first()
+            case "venue_slug":
+                venue = Venue.objects(slug=data["venue_slug"]).first()
 
-                # If city doesn't exist, error
-                if not city:
-                    raise UserError(f"City '{data['city_en']}' not found", 404)
-                if venue.city != city:
-                    setattr(venue, "city", city)
-                    updated_fields.append("city")
+                if not venue:
+                    raise UserError(f"Venue with slug '{data['venue_slug']}' not found.", 404)
+                if event.venue != venue:
+                    setattr(event, "venue", venue)
+                    updated_fields.append("venue_type")
                 else:
                     unchanged_fields.append(param)
             case _:
-                current_value = getattr(venue, param)
+                current_value = getattr(event, param)
                 new_value = data[param]
 
                 if current_value != new_value:
-                    setattr(venue, param, new_value)
+                    setattr(event, param, new_value)
                     updated_fields.append(param)
 
-                    match param:
-                        # Check location if address_en changed
-                        case "address_en":
-                            # Find coordinates if core address_en changed
-                            full_address_he = f"{venue.address_he}, {venue.city.name_he}"
-
-                            location = validate_and_get_location(full_address_he)
-
-                            if venue.location['coordinates'] != location['coordinates']:
-                                venue.location = location
-                                updated_fields.append("location")
-
-                        # Update slug if English name changes
-                        case "name_en":
-                            venue.slug = slugify(new_value)
+                    # Update slug if English name or start_date changes
+                    if param in ["name_en", "start_date"]:
+                        # date format for slug
+                        slug_date = data.get('start_date', event.start_date).strftime('%Y-%m-%d-%H-%M')
+                        event.slug = slugify(f"{event.name_en}-{slug_date}")
+                        if "slug" not in updated_fields:
                             updated_fields.append("slug")
                 else:
                     unchanged_fields.append(param)
 
-    # ---
-
-    # for param in data:
-    #     if param == "is_active":
-    #         if data["is_active"] != venue.is_active:
-    #             if not data["is_active"] and venue.is_active:
-    #                 active_events = Event.objects(venue=venue, is_active=True).count()
-    #                 if active_events > 0:
-    #                     raise UserError(
-    #                         "Cannot deactivate venue with active events. Please deactivate all events first.",
-    #                         409
-    #                     )
-    #             setattr(venue, param, data["is_active"])
-    #             updated_fields.append("is_active")
-    #         else:
-    #             unchanged_fields.append(param)
-    #     elif param == "venue_type_en":
-    #         venue_type = VenueType.objects(name_en=data["venue_type_en"].lower()).first()
-    #
-    #         if not venue_type:
-    #             raise UserError(f"Venue type '{data['venue_type_en']}' not found", 404)
-    #         if venue.venue_type != venue_type:
-    #             setattr(venue, "venue_type", venue_type)
-    #             updated_fields.append("venue_type")
-    #         else:
-    #             unchanged_fields.append(param)
-    #     elif param == "city_en":
-    #         # Check if city exists
-    #         city = City.objects(name_en=data["city_en"]).first()
-    #
-    #         # If city doesn't exist, error
-    #         if not city:
-    #             raise UserError(f"City '{data['city_en']}' not found", 404)
-    #         if venue.city != city:
-    #             setattr(venue, "city", city)
-    #             updated_fields.append("city")
-    #         else:
-    #             unchanged_fields.append(param)
-    #     else:
-    #         current_value = getattr(venue, param)
-    #         new_value = data[param]
-    #
-    #         if current_value != new_value:
-    #             setattr(venue, param, new_value)
-    #             updated_fields.append(param)
-    #
-    #             # Check location if address_en changed
-    #             if param == "address_en":
-    #                 # Find coordinates if core address_en changed
-    #                 full_address_he = f"{venue.address_he}, {venue.city.name_he}"
-    #
-    #                 location = validate_and_get_location(full_address_he)
-    #
-    #                 if venue.location['coordinates'] != location['coordinates']:
-    #                     venue.location = location
-    #                     updated_fields.append("location")
-    #
-    #             # Update slug if English name changes
-    #             if param == "name_en":
-    #                 venue.slug = slugify(new_value)
-    #                 updated_fields.append("slug")
-    #         else:
-    #             unchanged_fields.append(param)
-
     if updated_fields:
-        venue.save()
+        event.save()
+        event.reload()  # correct time (while saving it is in our timezone but stores in utc)
         message = f"Updated fields: {', '.join(updated_fields)}"
         if unchanged_fields:
             message += f". Unchanged fields: {', '.join(unchanged_fields)}"
@@ -532,33 +460,23 @@ def part_update_existing_venue(slug):
     return jsonify({
         "status": "success",
         "message": message,
-        "data": venue.to_response_dict()
+        "data": event.to_response_dict()
     }), 200
 
 
-def delete_existing_venue(slug):
+def delete_existing_event(slug):
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in DELETE-method is restricted.")
 
-    # Find existing venue type
-    venue = Venue.objects(slug=slug).first()
-    if not venue:
-        raise UserError(f"Venue with slug '{slug}' not found", 404)
+    # Find existing event
+    event = Event.objects(slug=slug).first()
+    if not event:
+        raise UserError(f"Event with slug '{slug}' not found", 404)
 
-    associated_active_events = Event.objects(venue=venue, is_active=True).count()
-
-    if associated_active_events > 0:
-        raise UserError(
-            "Cannot delete venue with active events.",
-            409
-        )
-
-    # If no active associated venues, delete the venue and image from image_path
-    delete_folder_from_path(venue.image_path)
-    venue.delete()  # cascade deleting of events (implemented in model Event)
+    # delete the event and image from image_path
+    delete_folder_from_path(event.image_path)
+    event.delete()
 
     # Return 204 No Content for successful deletion
     return '', 204

@@ -214,13 +214,14 @@ def validate_event_data(data):
                             "numbers, spaces and punctuation"
                         )
 
-    # Validate dates format and logic
-    if data["end_date"] < data["start_date"]:
-        raise UserError("End date must be after start date.")
+    if "start_date" in data and "end_date" in data:
+        # Validate dates format and logic
+        if data["end_date"] < data["start_date"]:
+            raise UserError("End date must be after start date.")
 
-    # Check if start date is not in past
-    if not is_valid_end_time(data["end_date"]):
-        raise UserError('Event cannot end in the past or before current time.')
+        # Check if start date is not in past
+        if not is_valid_end_time(data["end_date"]):
+            raise UserError('Event cannot end in the past or before current time.')
 
     # Validate price logic
     if "price_type" in data:
