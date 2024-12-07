@@ -26,6 +26,7 @@ def load_config():
         "GEONAMES_USERNAME",
         "HERE_API_KEY",
         "APP_SERVICE_EMAIL",
+        "APP_SERVICE_EMAIL_PASSWORD",
         "JWT_SECRET_KEY"
     }
 
@@ -59,6 +60,12 @@ def load_config():
 
         # Email
         "APP_SERVICE_EMAIL": os.getenv("APP_SERVICE_EMAIL"),
+        "APP_SERVICE_EMAIL_PASSWORD": os.getenv("APP_SERVICE_EMAIL_PASSWORD"),
+        "SMTP_SERVER": "smtp.gmail.com",
+        "SMTP_PORT": 587,
+
+        # App URL
+        "BASE_URL": os.getenv("BASE_URL", "http://localhost:5000"),
 
         # App settings
         "DEBUG": os.getenv("DEBUG", "False").lower() == "true",

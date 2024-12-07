@@ -413,13 +413,13 @@ def part_update_existing_event(slug):
     validate_event_data(data)  # we need both of dates or none of them
 
     # Track changes
-    updated_fields = []
-    unchanged_fields = []
+    updated_params = []
+    unchanged_params = []
 
     if "image" in request.files:
         image_path = save_image_from_request(file, "events", event.slug)
         event.image_path = image_path
-        updated_fields.append("image_path")
+        updated_params.append("image_path")
 
     for param in data:
         match param:
@@ -430,9 +430,9 @@ def part_update_existing_event(slug):
                     raise UserError(f"Event type with slug '{data['event_type_slug']}' not found.", 404)
                 if event.event_type != event_type:
                     setattr(event, "event_type", event_type)
-                    updated_fields.append("venue_type")
+                    updated_params.append("venue_type")
                 else:
-                    unchanged_fields.append(param)
+                    unchanged_params.append(param)
             case "venue_slug":
                 venue = Venue.objects(slug=data["venue_slug"]).first()
 
@@ -440,16 +440,16 @@ def part_update_existing_event(slug):
                     raise UserError(f"Venue with slug '{data['venue_slug']}' not found.", 404)
                 if event.venue != venue:
                     setattr(event, "venue", venue)
-                    updated_fields.append("venue_type")
+                    updated_params.append("venue_type")
                 else:
-                    unchanged_fields.append(param)
+                    unchanged_params.append(param)
             case _:
                 current_value = getattr(event, param)
                 new_value = data[param]
 
                 if current_value != new_value:
                     setattr(event, param, new_value)
-                    updated_fields.append(param)
+                    updated_params.append(param)
 
                     # Update slug if English name or start_date changes
                     if param in ["name_en", "start_date"]:
@@ -457,17 +457,17 @@ def part_update_existing_event(slug):
                         local_date = convert_to_local(data.get("start_date", event.start_date))
                         slug_date = local_date.strftime('%Y-%m-%d-%H-%M')
                         event.slug = slugify(f"{event.name_en}-{slug_date}")
-                        if "slug" not in updated_fields:
-                            updated_fields.append("slug")
+                        if "slug" not in updated_params:
+                            updated_params.append("slug")
                 else:
-                    unchanged_fields.append(param)
+                    unchanged_params.append(param)
 
-    if updated_fields:
+    if updated_params:
         event.save()
         event.reload()  # correct time (while saving it is in our timezone but stores in utc)
-        message = f"Updated fields: {', '.join(updated_fields)}"
-        if unchanged_fields:
-            message += f". Unchanged fields: {', '.join(unchanged_fields)}"
+        message = f"Updated fields: {', '.join(updated_params)}"
+        if unchanged_params:
+            message += f". Unchanged fields: {', '.join(unchanged_params)}"
     else:
         message = "No fields were updated as all values are the same."
 

@@ -4,8 +4,14 @@ from flask_jwt_extended import create_access_token
 from datetime import datetime
 
 from backend.src.utils.constants import ALLOWED_AUTH_BODY_PARAMS, REQUIRED_AUTH_BODY_PARAMS
+from backend.src.utils.email_utils import send_reset_password_email
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.pre_mongo_validators import validate_user_data
+import logging
+
+from backend.src.utils.temp_token import generate_reset_token
+
+logger = logging.getLogger('backend')
 
 
 def register_new_user():
@@ -103,7 +109,7 @@ def existing_user_login():
         httponly=True,
         secure=current_app.config["JWT_COOKIE_SECURE"],
         samesite='Strict',
-        max_age=24 * 60 * 60    # same as token life - 1 day
+        max_age=24 * 60 * 60  # same as token life - 1 day
     )
 
     return response, 200
@@ -130,3 +136,104 @@ def user_logout():
     )
 
     return response, 200
+
+
+def request_password_reset():
+    """
+    Handle password reset request
+
+    Expected body: {"email": "user@example.com"}
+    Returns success message regardless of whether email exists (security)
+    """
+    data = request.get_json()
+
+    unknown_params = set(data.keys()) - {"email"}
+    if unknown_params:
+        raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
+
+    if "email" not in data:
+        raise UserError("Email is required.")
+
+    # for security reason we are not telling if the email exists in our db
+    universal_response = {
+        "status": "success",
+        "message": "If the email exists, reset instructions will be sent"
+    }
+
+    # Find user by email
+    user = User.objects(email=data["email"]).first()
+
+    # If user not found, still return success (prevents email enumeration)
+    if not user:
+        logger.info(f"Password reset requested for non-existent email: {data['email']}")
+        return jsonify(universal_response), 200
+
+    # Generate and save reset token
+    reset_token = generate_reset_token()
+    user.set_reset_password_token(reset_token)
+
+    # Create reset link
+    base_url = current_app.config.get("BASE_URL", "http://localhost:5000")
+    reset_link = f"{base_url}/api/v1/auth/reset-password/verify?token={reset_token}"
+
+    send_reset_password_email(user.email, reset_link)
+    logger.info(f"Password reset link sent to: {user.email}")
+
+    return jsonify(universal_response), 200
+
+
+def verify_reset_token():
+    """
+    Verify reset password token validity
+
+    Expected args: ?token=xxx
+    Returns: success if token is valid and not expired
+    """
+    unknown_args = set(request.args.keys()) - {"token"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    token = request.args.get('token')
+    if not token:
+        raise UserError("Reset token is required.")
+
+    user = User.objects(reset_password_token=token).first()
+    if not user or not user.is_reset_token_valid(token):
+        raise UserError("Invalid or expired reset token.")
+
+    return jsonify({
+        "status": "success",
+        "message": "Token is valid."
+    }), 200
+
+
+def confirm_password_reset():
+    """
+    Set new password using reset token
+
+    Expected body: {
+        "token": "xxx",
+        "new_password": "newpass123"
+    }
+    """
+    data = request.get_json()
+
+    unknown_params = set(data.keys()) - {"token", "new_password"}
+    if unknown_params:
+        raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
+
+    if "token" not in data or "new_password" not in data:
+        raise UserError("Token and new password are required.")
+
+    user = User.objects(reset_password_token=data["token"]).first()
+    if not user or not user.is_reset_token_valid(data["token"]):
+        raise UserError("Invalid or expired reset token.")
+
+    user.password = data["new_password"]  # модель сама хэширует пароль
+    user.clear_reset_password_token()  # очищаем использованный токен
+    user.save()
+
+    return jsonify({
+        "status": "success",
+        "message": "Password has been reset successfully"
+    }), 200

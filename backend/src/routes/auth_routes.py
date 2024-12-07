@@ -2,7 +2,8 @@ from flask import Blueprint
 from flask_jwt_extended import jwt_required
 
 from backend.src.config.limiter import auth_limit, public_routes_limit
-from backend.src.controllers.auth_controllers import register_new_user, existing_user_login, user_logout
+from backend.src.controllers.auth_controllers import register_new_user, existing_user_login, user_logout, \
+    request_password_reset, verify_reset_token, confirm_password_reset
 from backend.src.utils.custom_decorators import require_json, no_args_in_request, no_body_in_request
 
 # Create Blueprint for authorization
@@ -34,3 +35,29 @@ def user_login():
 def logout():
     """Handle POST request for logout"""
     return user_logout()
+
+
+@auth_bp.route("/reset-password/request", methods=["POST"])
+@auth_limit()
+@require_json()
+@no_args_in_request()
+def request_pwd_reset():
+    """Handle POST request for registration"""
+    return request_password_reset()
+
+
+@auth_bp.route("/reset-password/verify", methods=["GET"])
+@auth_limit()
+@no_body_in_request()
+def verify_token():
+    """Handle GET request for token verification"""
+    return verify_reset_token()
+
+
+@auth_bp.route("/reset-password/confirm", methods=["POST"])
+@auth_limit()
+@require_json()
+@no_args_in_request()
+def reset_password_confirm():
+    """Handle POST request for setting new password"""
+    return confirm_password_reset()

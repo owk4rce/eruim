@@ -1,6 +1,6 @@
 from mongoengine import Document, StringField, EmailField, ListField, ReferenceField, BooleanField, DateTimeField, \
     CASCADE
-from datetime import datetime
+from datetime import datetime, timedelta
 import bcrypt
 import re
 import pytz
@@ -46,6 +46,15 @@ class User(Document):
         required=True,
         choices=SUPPORTED_LANGUAGES,  # ['en', 'ru', 'he']
         default="en"
+    )
+
+    # reset password functionality
+    reset_password_token = StringField(
+        default=None
+    )
+
+    reset_password_token_created = DateTimeField(
+        default=None
     )
 
     created_at = DateTimeField(
@@ -167,6 +176,41 @@ class User(Document):
             ],
             "default_lang": self.default_lang
         }
+
+    def set_reset_password_token(self, token):
+        """Set reset password token and its creation time"""
+        self.reset_password_token = token
+        self.reset_password_token_created = datetime.utcnow()
+        self.save()
+
+    def clear_reset_password_token(self):
+        """Clear reset password token and its creation time"""
+        self.reset_password_token = None
+        self.reset_password_token_created = None
+        self.save()
+
+    def is_reset_token_valid(self, token, expires_in=timedelta(hours=2)):
+        """
+        Check if reset password token is valid
+
+        Args:
+            token: Token to validate
+            expires_in: Token lifetime, defaults to 24 hours
+
+        Returns:
+            bool: True if token is valid and not expired
+        """
+        if not self.reset_password_token or not self.reset_password_token_created:
+            return False
+
+        if self.reset_password_token != token:
+            return False
+
+        # check the validity time
+        if datetime.utcnow() - self.reset_password_token_created > expires_in:
+            return False
+
+        return True
 
     def clean(self):
         """Validate and hash password before saving"""
