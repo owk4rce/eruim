@@ -51,6 +51,7 @@ def get_all_events():
     if city_slug_arg and venue_slug_arg:
         raise UserError("Only one argument, 'city' or 'venue', is allowed. ")
 
+    # if city filter
     if city_slug_arg:
         city = City.objects(slug=city_slug_arg).first()
         if not city:
@@ -59,6 +60,7 @@ def get_all_events():
         venues = Venue.objects(city=city)
         query["venue__in"] = venues
 
+    # if venue filter
     if venue_slug_arg:
         venue = Venue.objects(slug=venue_slug_arg).first()
         if not venue:
@@ -66,8 +68,16 @@ def get_all_events():
 
         query["venue"] = venue
 
-    # Get events from database with filters
-    events = Event.objects(**query)
+    # Handle sorting by start_date (desc by default to show upcoming events first)
+    sort_direction = request.args.get("sort", "desc")
+    if sort_direction not in ["asc", "desc"]:
+        raise UserError("Parameter 'sort' must be 'asc' or 'desc'")
+
+    # Convert sort direction to mongoengine format (+/-)
+    sort_prefix = "" if sort_direction == "asc" else "-"
+
+    # Get events from database with filters and sorting
+    events = Event.objects(**query).order_by(f"{sort_prefix}start_date")
 
     # format response
     events_data = [event.to_response_dict(lang_arg) for event in events]

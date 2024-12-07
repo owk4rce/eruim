@@ -95,7 +95,7 @@ PRICE_TYPE_TRANSLATIONS = {
 }
 
 ALLOWED_EVENT_GET_ALL_ARGS = {
-    "lang", "is_active", "city", "venue"
+    "lang", "is_active", "city", "venue", "sort"
 }
 
 ALLOWED_EVENT_CREATE_BODY_PARAMS = {
