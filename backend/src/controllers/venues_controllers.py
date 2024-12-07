@@ -447,7 +447,7 @@ def part_update_existing_venue(slug):
                 if venue.venue_type != venue_type:
                     update_data["set__venue_type"] = venue_type
                 else:
-                    unchanged_params.append(param)
+                    unchanged_params.append("venue_type")
             case "city_en":
                 # Check if city exists
                 city = City.objects(name_en=data["city_en"]).first()
@@ -458,7 +458,7 @@ def part_update_existing_venue(slug):
                 if venue.city != city:
                     update_data["set__city"] = city
                 else:
-                    unchanged_params.append(param)
+                    unchanged_params.append("city")
             case "address_en":
                 # Check if address_en changed
                 if value != venue.address_en:

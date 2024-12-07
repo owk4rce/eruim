@@ -421,34 +421,33 @@ def part_update_existing_event(slug):
         event.image_path = image_path
         updated_params.append("image_path")
 
-    for param in data:
+    for param, value in data.items():
         match param:
             case "event_type_slug":
-                event_type = EventType.objects(slug=data["event_type_slug"]).first()
+                event_type = EventType.objects(slug=value).first()
 
                 if not event_type:
-                    raise UserError(f"Event type with slug '{data['event_type_slug']}' not found.", 404)
+                    raise UserError(f"Event type with slug '{value}' not found.", 404)
                 if event.event_type != event_type:
                     setattr(event, "event_type", event_type)
-                    updated_params.append("venue_type")
+                    updated_params.append("event_type")
                 else:
-                    unchanged_params.append(param)
+                    unchanged_params.append("event_type")
             case "venue_slug":
-                venue = Venue.objects(slug=data["venue_slug"]).first()
+                venue = Venue.objects(slug=value).first()
 
                 if not venue:
-                    raise UserError(f"Venue with slug '{data['venue_slug']}' not found.", 404)
+                    raise UserError(f"Venue with slug '{value}' not found.", 404)
                 if event.venue != venue:
                     setattr(event, "venue", venue)
-                    updated_params.append("venue_type")
+                    updated_params.append("venue")
                 else:
-                    unchanged_params.append(param)
+                    unchanged_params.append("venue")
             case _:
                 current_value = getattr(event, param)
-                new_value = data[param]
 
-                if current_value != new_value:
-                    setattr(event, param, new_value)
+                if current_value != value:
+                    setattr(event, param, value)
                     updated_params.append(param)
 
                     # Update slug if English name or start_date changes
