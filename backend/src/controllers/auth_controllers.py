@@ -5,12 +5,12 @@ from flask_jwt_extended import create_access_token
 from datetime import datetime
 
 from backend.src.utils.constants import ALLOWED_AUTH_BODY_PARAMS, REQUIRED_AUTH_BODY_PARAMS, USER_PATTERNS
-from backend.src.utils.email_utils import send_reset_password_email
+from backend.src.utils.email_utils import send_reset_password_email, send_account_activation_email
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.pre_mongo_validators import validate_user_data
 import logging
 
-from backend.src.utils.temp_token import generate_reset_token
+from backend.src.utils.temp_token import generate_service_token
 
 logger = logging.getLogger('backend')
 
@@ -37,7 +37,7 @@ def register_new_user():
         email=data['email'],
         password=data['password'],
         role='user',  # всегда user при регистрации
-        is_active=True,  # всегда активный при регистрации
+        is_active=False,  # всегда активный при регистрации
         default_lang=data.get('default_lang', 'en')
     )
     user.save()
@@ -45,10 +45,22 @@ def register_new_user():
     # Create access token
     access_token = create_access_token(identity=str(user.id))
 
+    #
+    # Generate and save reset token
+    activation_token = generate_service_token()
+    user.set_email_confirmation_token(activation_token)
+
+    # Create activation link
+    base_url = current_app.config.get("BASE_URL", "http://localhost:5000")
+    activation_link = f"{base_url}/api/v1/auth/confirm_email/verify?token={activation_token}"
+
+    send_account_activation_email(user.email, activation_link)
+    #
+
     # Create response
     response = jsonify({
         'status': 'success',
-        'message': 'Registration successful.',
+        'message': 'Registration successful. The activation email sent.',
         'data': user.to_response_dict()
     })
 
@@ -170,7 +182,7 @@ def request_password_reset():
         return jsonify(universal_response), 200
 
     # Generate and save reset token
-    reset_token = generate_reset_token()
+    reset_token = generate_service_token()
     user.set_reset_password_token(reset_token)
 
     # Create reset link
@@ -248,4 +260,30 @@ def confirm_password_reset():
     return jsonify({
         "status": "success",
         "message": "Password has been reset successfully."
+    }), 200
+
+
+def verify_email_confirmation_token():
+    """
+    Verify token from activation email
+    """
+    unknown_args = set(request.args.keys()) - {"token"}
+    if unknown_args:
+        raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
+
+    token = request.args.get('token')
+    if not token:
+        raise UserError("Account activation token is required.")
+
+    user = User.objects(email_confirmation_token=token).first()
+    if not user or not user.is_confirmation_token_valid(token):
+        raise UserError("Invalid or expired activation token.")
+
+    user.is_active = True
+    user.clear_email_confirmation_token()  # clear token after use
+    user.save()
+
+    return jsonify({
+        "status": "success",
+        "message": "Token is valid. Account is active."
     }), 200

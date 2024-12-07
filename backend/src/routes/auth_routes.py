@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 
 from backend.src.config.limiter import auth_limit, public_routes_limit
 from backend.src.controllers.auth_controllers import register_new_user, existing_user_login, user_logout, \
-    request_password_reset, verify_reset_token, confirm_password_reset
+    request_password_reset, verify_reset_token, confirm_password_reset, verify_email_confirmation_token
 from backend.src.utils.custom_decorators import require_json, no_args_in_request, no_body_in_request
 
 # Create Blueprint for authorization
@@ -61,3 +61,11 @@ def verify_token():
 def reset_password_confirm():
     """Handle POST request for setting new password"""
     return confirm_password_reset()
+
+
+@auth_bp.route("/confirm_email/verify", methods=["GET"])
+@public_routes_limit()
+@no_body_in_request()
+def verify_activation_token():
+    """Handle GET request for token verification"""
+    return verify_email_confirmation_token()

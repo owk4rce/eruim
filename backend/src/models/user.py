@@ -57,6 +57,15 @@ class User(Document):
         default=None
     )
 
+    # account activation functionality
+    email_confirmation_token = StringField(
+        default=None
+    )
+
+    email_confirmation_token_created = DateTimeField(
+        default=None
+    )
+
     created_at = DateTimeField(
         default=datetime.utcnow
     )
@@ -211,6 +220,43 @@ class User(Document):
             return False
 
         return True
+
+    #
+    def set_email_confirmation_token(self, token):
+        """Set reset password token and its creation time"""
+        self.email_confirmation_token = token
+        self.email_confirmation_token_created = datetime.utcnow()
+        self.save()
+
+    def clear_email_confirmation_token(self):
+        """Clear reset password token and its creation time"""
+        self.email_confirmation_token = None
+        self.email_confirmation_token_created = None
+        self.save()
+
+    def is_confirmation_token_valid(self, token, expires_in=timedelta(hours=48)):
+        """
+        Check if reset password token is valid
+
+        Args:
+            token: Token to validate
+            expires_in: Token lifetime, defaults to 24 hours
+
+        Returns:
+            bool: True if token is valid and not expired
+        """
+        if not self.email_confirmation_token or not self.email_confirmation_token_created:
+            return False
+
+        if self.email_confirmation_token != token:
+            return False
+
+        # check the validity time
+        if datetime.utcnow() - self.email_confirmation_token_created > expires_in:
+            return False
+
+        return True
+    #
 
     def clean(self):
         """Validate and hash password before saving"""

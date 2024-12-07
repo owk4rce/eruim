@@ -1,7 +1,7 @@
 import secrets
 
 
-def generate_reset_token(length=32):
+def generate_service_token(length=32):
     """
     Generate secure random token for password reset
 

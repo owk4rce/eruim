@@ -95,3 +95,45 @@ def send_reset_password_email(recipient_email, reset_link):
 
     except Exception as e:
         raise ConfigurationError(f"Failed to send email: {str(e)}")
+
+
+def send_account_activation_email(recipient_email, activation_link):
+    """
+
+    """
+    try:
+        # Get email settings from config
+        sender_email = current_app.config["APP_SERVICE_EMAIL"]
+        sender_password = current_app.config["APP_SERVICE_EMAIL_PASSWORD"]
+
+        # Create message
+        message = MIMEMultipart()
+        message["From"] = sender_email
+        message["To"] = recipient_email
+        message["Subject"] = "Account activation"
+
+        body = f"""
+        Somebody, probably you, entered this email address during the registration.
+
+        If it was you, please click the following link to activate your account:
+        {activation_link}
+
+        Otherwise, please ignore this email.
+
+        This link will expire in 48 hours. After that the account associated with this email will be deleted.
+        """
+
+        message.attach(MIMEText(body, "plain"))
+
+        # Create SMTP session
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            logger.info("Starting SMTP session...")
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(message)
+            logger.info(f"Activation email sent to {recipient_email}")
+
+        return True
+
+    except Exception as e:
+        raise ConfigurationError(f"Failed to send email: {str(e)}")
