@@ -16,6 +16,22 @@ logger = logging.getLogger('backend')
 
 
 def register_new_user():
+    """
+    Handle user registration process.
+
+    Process:
+    1. Validates request data
+    2. Creates inactive user account
+    3. Sends activation email
+    4. Returns JWT token for immediate auth
+
+    Expected body:
+        {
+            "email": "user@example.com",
+            "password": "StrongPass1!",
+            "default_lang": "en"  # optional
+        }
+    """
     data = request.get_json()
 
     unknown_params = set(data.keys()) - ALLOWED_AUTH_BODY_PARAMS
@@ -28,24 +44,27 @@ def register_new_user():
 
     validate_user_data(data)  # pre-mongo validation
 
+    logger.info(f"Starting registration process for email: {data['email']}")
+
     # Check if email already exists
-    if User.objects(email=data['email']).first():
+    if User.objects(email=data["email"]).first():
         raise UserError("User with this email already exists.", 409)
 
     # Create user
     user = User(
-        email=data['email'],
-        password=data['password'],
-        role='user',  # всегда user при регистрации
-        is_active=False,  # всегда активный при регистрации
-        default_lang=data.get('default_lang', 'en')
+        email=data["email"],
+        password=data["password"],
+        role="user",  # always user (self-registered)
+        is_active=False,  # always inactive
+        default_lang=data.get("default_lang", "en")
     )
     user.save()
+
+    logger.info(f"Created new user account for: {data['email']}")
 
     # Create access token
     access_token = create_access_token(identity=str(user.id))
 
-    #
     # Generate and save reset token
     activation_token = generate_service_token()
     user.set_email_confirmation_token(activation_token)
@@ -55,13 +74,12 @@ def register_new_user():
     activation_link = f"{base_url}/api/v1/auth/confirm_email/verify?token={activation_token}"
 
     send_account_activation_email(user.email, activation_link)
-    #
 
     # Create response
     response = jsonify({
-        'status': 'success',
-        'message': 'Registration successful. The activation email sent.',
-        'data': user.to_response_dict()
+        "status": "success",
+        "message": "Registration successful. The activation email sent.",
+        "data": user.to_response_dict()
     })
 
     # Set token in cookie
@@ -78,6 +96,21 @@ def register_new_user():
 
 
 def existing_user_login():
+    """
+    Handle user login process.
+
+    Process:
+    1. Validates credentials
+    2. Checks account status
+    3. Creates JWT token
+    4. Updates last login time
+
+    Expected body:
+        {
+            "email": "user@example.com",
+            "password": "UserPassword1!"
+        }
+    """
     data = request.get_json()
 
     unknown_params = set(data.keys()) - REQUIRED_AUTH_BODY_PARAMS
@@ -101,6 +134,8 @@ def existing_user_login():
     if not user.is_active:
         raise UserError("Account is inactive.", 403)
 
+    logger.info(f"Successful login for user: {data['email']}")
+
     # Create access token
     access_token = create_access_token(identity=str(user.id))
 
@@ -121,7 +156,7 @@ def existing_user_login():
         access_token,
         httponly=True,
         secure=current_app.config["JWT_COOKIE_SECURE"],
-        samesite='Strict',
+        samesite="Strict",
         max_age=24 * 60 * 60  # same as token life - 1 day
     )
 
@@ -130,22 +165,23 @@ def existing_user_login():
 
 def user_logout():
     """
-    Logout user by removing JWT token cookie
+    Handle user logout by removing JWT token cookie.
 
-    Returns:
-        Success message
+    Process:
+    1. Creates clean response
+    2. Removes auth cookie
     """
     response = jsonify({
-        'status': 'success',
-        'message': 'Logout successful.'
+        "status": "success",
+        "message": "Logout successful."
     })
 
     # Remove token cookie
     response.delete_cookie(
-        'token',
+        "token",
         httponly=True,
         secure=current_app.config["JWT_COOKIE_SECURE"],
-        samesite='Strict'
+        samesite="Strict"
     )
 
     return response, 200
@@ -153,10 +189,19 @@ def user_logout():
 
 def request_password_reset():
     """
-    Handle password reset request
+    Handle password reset request.
 
-    Expected body: {"email": "user@example.com"}
-    Returns success message regardless of whether email exists (security)
+    Process:
+    1. Validates email existence
+    2. Creates reset token
+    3. Sends reset email
+
+    Expected body:
+        {
+            "email": "user@example.com"
+        }
+
+    Note: Returns success regardless of email existence for security
     """
     data = request.get_json()
 
@@ -197,10 +242,14 @@ def request_password_reset():
 
 def verify_reset_token():
     """
-    Verify reset password token validity
+    Verify reset password token validity.
 
-    Expected args: ?token=xxx
-    Returns: success if token is valid and not expired
+    Process:
+    1. Validates token presence
+    2. Checks token existence and expiration
+
+    Expected args:
+        ?token=xxx
     """
     unknown_args = set(request.args.keys()) - {"token"}
     if unknown_args:
@@ -214,6 +263,8 @@ def verify_reset_token():
     if not user or not user.is_reset_token_valid(token):
         raise UserError("Invalid or expired reset token.")
 
+    logger.info(f"Valid reset token used for user: {user.email}")
+
     return jsonify({
         "status": "success",
         "message": "Token is valid."
@@ -222,12 +273,18 @@ def verify_reset_token():
 
 def confirm_password_reset():
     """
-    Set new password using reset token
+    Set new password using reset token.
 
-    Expected body: {
-        "token": "xxx",
-        "new_password": "newpass123"
-    }
+    Process:
+    1. Validates token and new password
+    2. Updates password
+    3. Clears reset token
+
+    Expected body:
+        {
+            "token": "xxx",
+            "new_password": "NewPass1!"
+        }
     """
     data = request.get_json()
 
@@ -253,9 +310,12 @@ def confirm_password_reset():
     if not user or not user.is_reset_token_valid(data["token"]):
         raise UserError("Invalid or expired reset token.")
 
+    logger.info(f"Processing password reset for user: {user.email}")
+
     user.password = data["new_password"]
     user.clear_reset_password_token()  # clear token after use
     user.save()
+    logger.info(f"Password successfully reset for user: {user.email}")
 
     return jsonify({
         "status": "success",
@@ -265,7 +325,15 @@ def confirm_password_reset():
 
 def verify_email_confirmation_token():
     """
-    Verify token from activation email
+    Verify token from activation email.
+
+    Process:
+    1. Validates token presence
+    2. Checks token existence and expiration
+    3. Activates user account
+
+    Expected args:
+        ?token=xxx
     """
     unknown_args = set(request.args.keys()) - {"token"}
     if unknown_args:
@@ -279,6 +347,7 @@ def verify_email_confirmation_token():
     if not user or not user.is_confirmation_token_valid(token):
         raise UserError("Invalid or expired activation token.")
 
+    logger.info(f"Activating account for user: {user.email}")
     user.is_active = True
     user.clear_email_confirmation_token()  # clear token after use
     user.save()

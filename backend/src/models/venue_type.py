@@ -37,8 +37,8 @@ class VenueType(Document):
     )
 
     meta = {
-        'collection': 'venue_types',    # MongoDB collection name
-        'indexes': ['name_ru', 'name_en', 'name_he', 'slug']    # Database indexes
+        "collection": "venue_types",    # MongoDB collection name
+        "indexes": ["name_ru", "name_en", "name_he", "slug"]    # Database indexes
     }
 
     def get_name(self, lang='en'):

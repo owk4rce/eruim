@@ -37,11 +37,11 @@ class EventType(Document):
     )
 
     meta = {
-        'collection': 'event_types',    # MongoDB collection name
-        'indexes': ['name_ru', 'name_en', 'name_he', 'slug']    # Database indexes
+        "collection": "event_types",    # MongoDB collection name
+        "indexes": ["name_ru", "name_en", "name_he", "slug"]    # Database indexes
     }
 
-    def get_name(self, lang='en'):
+    def get_name(self, lang="en"):
         """
         Get event type name in specified language.
 
@@ -56,7 +56,7 @@ class EventType(Document):
             >>> event_type.get_name('ru')
             'концерт'
         """
-        return getattr(self, f'name_{lang}')
+        return getattr(self, f"name_{lang}")
 
     def to_response_dict(self, lang=None):
         """Convert event type to API response format"""

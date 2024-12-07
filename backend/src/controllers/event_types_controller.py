@@ -8,10 +8,17 @@ from backend.src.models.event_type import EventType
 from backend.src.models.event import Event
 from backend.src.utils.pre_mongo_validators import validate_event_type_data
 
+import logging
+
+logger = logging.getLogger("backend")
+
 
 def get_all_event_types():
     """
+    Get list of all event types.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
     """
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -37,7 +44,10 @@ def get_all_event_types():
 
 def get_existing_event_type(slug):
     """
+    Get single event type by slug.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
     """
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -66,7 +76,20 @@ def get_existing_event_type(slug):
 
 def create_new_event_type():
     """
+    Create new event type with auto-translation.
 
+    Expected body:
+        At least one name in any supported language:
+        {
+            "name_en": "concert" and/or
+            "name_ru": "концерт" and/or
+            "name_he": "קונצרט"
+        }
+
+    Process:
+        1. Validates provided name
+        2. Auto-translates to other languages
+        3. Creates event type with slug from English name
     """
     data = request.get_json()
 
@@ -124,6 +147,8 @@ def create_new_event_type():
                            )
     event_type.save()
 
+    logger.info(f"Created new event type: {name_en}")
+
     return jsonify({
         "status": "success",
         "message": "Event type created successfully",
@@ -133,17 +158,14 @@ def create_new_event_type():
 
 def full_update_existing_event_type(slug):
     """
-    Update existing event type
+    Full update of event type.
 
-    Query Body Parameters:
-        - name_en (str, required): Name in English
-        - name_ru (str, required): Name in Russian
-        - name_he (str, required): Name in Hebrew
-
-    Returns:
-        JSON response with:
-        - status: success/error
-        - message: event type updated
+    Expected body:
+        {
+            "name_en": "concert",
+            "name_ru": "концерт",
+            "name_he": "קונצרט"
+        }
     """
     data = request.get_json()
 
@@ -177,6 +199,7 @@ def full_update_existing_event_type(slug):
 
     # reload to get new for response
     event_type.reload()
+    logger.info(f"Full update of event type: {data['name_en']}")
 
     return jsonify({
         "status": "success",
@@ -187,17 +210,15 @@ def full_update_existing_event_type(slug):
 
 def part_update_existing_event_type(slug):
     """
-    Partial update existing event type
+    Partial update of event type.
 
-    Query Body Parameters:
-        - name_en (str, optional): Name in English
-        - name_ru (str, optional): Name in Russian
-        - name_he (str, optional): Name in Hebrew
-
-    Returns:
-        JSON response with:
-        - status: success/error
-        - message: event type updated
+    Expected body:
+        One or more names to update:
+        {
+            "name_en": "concert" and/or
+            "name_ru": "концерт" and/or
+            "name_he": "קונצרט"
+        }
     """
     data = request.get_json()
 
@@ -238,6 +259,7 @@ def part_update_existing_event_type(slug):
         EventType.objects(slug=slug).update_one(**update_data)
         event_type.reload()
         updated_params = [param.replace('set__', '') for param in update_data.keys()]
+        logger.info(f"Partial update of event type {event_type.name_en}, fields: {', '.join(updated_params)}")
         message = f"Updated parameters: {', '.join(updated_params)}"
         if unchanged_params:
             message += f". Unchanged parameters: {', '.join(unchanged_params)}"
@@ -253,14 +275,7 @@ def part_update_existing_event_type(slug):
 
 def delete_existing_event_type(slug):
     """
-    Delete existing event type if there are no events with this type
-
-    Returns:
-        JSON response with:
-        - status: error
-        - message: event type updated
-
-        204
+    Delete event type if no associated events exist.
     """
     # Find existing event type
     event_type = EventType.objects(slug=slug).first()
@@ -274,6 +289,8 @@ def delete_existing_event_type(slug):
             "Cannot delete this event type. Please delete all associated events first.",
             409
         )
+
+    logger.info(f"Deleting event type: {event_type.name_en}")
 
     # If no associated events, delete the event type
     event_type.delete()

@@ -1,3 +1,4 @@
+from flasgger import Swagger
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -7,9 +8,10 @@ from backend.src.config.config import load_config
 from backend.src.config.db import connect_db
 from backend.src.config.limiter import public_routes_limiter, protected_routes_limiter
 from backend.src.config.logger import setup_logger
+from backend.src.config.swagger import get_swagger_config, get_swagger_template
 from backend.src.routes import api_v1_bp
 from backend.src.utils.error_handlers import register_error_handlers
-from backend.src.utils.event_scheduler import init_scheduler
+from backend.src.config.scheduler import init_scheduler
 
 app = Flask(__name__)
 
@@ -19,6 +21,12 @@ logger = setup_logger(is_initial=True)
 try:
     config = load_config()
     app.config.update(config)
+
+    swagger = Swagger(
+        app,
+        config=get_swagger_config(),
+        template=get_swagger_template()
+    )
 
     # Reconfigure logger with settings from config
     logger = setup_logger(app)

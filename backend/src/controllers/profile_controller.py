@@ -7,10 +7,16 @@ from backend.src.utils.exceptions import UserError
 from backend.src.utils.pre_mongo_validators import validate_user_data
 from backend.src.models.event import Event
 
+import logging
+logger = logging.getLogger("backend")
+
 
 def get_user_profile():
     """
+    Get current user's profile data.
 
+    Returns:
+        User profile with favorite events in default language
     """
     # getting user id from jwt
     current_user_id = get_jwt_identity()
@@ -31,7 +37,16 @@ def get_user_profile():
 
 def full_update_user_profile():
     """
+    Full update of user profile.
 
+    Expected body:
+        {
+            "email": "user@example.com",
+            "password": "NewPass1!",
+            "default_lang": "en"
+        }
+
+    Note: Password will be hashed before saving
     """
     data = request.get_json()
 
@@ -54,22 +69,32 @@ def full_update_user_profile():
     validate_user_data(data)  # pre-mongo validation
 
     # update user with data
-    user.email = data['email']
-    user.password = data['password']  # clean from model is responsible for hashing
-    user.default_lang = data['default_lang']
+    user.email = data["email"]
+    user.password = data["password"]  # clean from model is responsible for hashing
+    user.default_lang = data["default_lang"]
 
     user.save()
 
+    logger.info(f"Full profile update for user: {user.email}")
+
     return jsonify({
-        'status': 'success',
-        'message': "User's profile fully updated successfully",
+        "status": "success",
+        "message": "User's profile fully updated successfully",
         "data": user.to_profile_response_dict()
     }), 200
 
 
 def part_update_user_profile():
     """
+    Partial update of user profile.
 
+    Expected body:
+        One or more fields:
+        {
+            "email": "new@example.com" and/or
+            "password": "NewPass1!" and/or
+            "default_lang": "ru"
+        }
     """
     data = request.get_json()
 
@@ -92,7 +117,7 @@ def part_update_user_profile():
     unchanged_params = []
 
     for param, value in data.items():
-        if param == 'password':  # check if new password is different from stored in hash
+        if param == "password":  # check if new password is different from stored in hash
             if user.verify_password(value):
                 unchanged_params.append(param)
             else:
@@ -109,6 +134,7 @@ def part_update_user_profile():
 
     if updated_params:
         user.save()
+        logger.info(f"Partial profile update for user {user.email}, fields: {', '.join(updated_params)}")
         message = f"Updated parameters: {', '.join(updated_params)}"
         if unchanged_params:
             message += f". Unchanged parameters: {', '.join(unchanged_params)}"
@@ -124,7 +150,9 @@ def part_update_user_profile():
 
 def add_event_to_favorites(event_slug):
     """
+    Add event to user's favorites list.
 
+    Returns same response if event already in favorites.
     """
     current_user_id = get_jwt_identity()
 
@@ -149,6 +177,8 @@ def add_event_to_favorites(event_slug):
     User.objects(id=current_user_id).update_one(add_to_set__favorite_events=event)
     user.reload()
 
+    logger.info(f"Added event {event_slug} to favorites for user: {user.email}")
+
     return jsonify({
         "status": "success",
         "message": "Event added to favorites",
@@ -158,7 +188,9 @@ def add_event_to_favorites(event_slug):
 
 def remove_event_from_favorites(event_slug):
     """
+    Remove event from user's favorites list.
 
+    Returns same response if event not in favorites.
     """
     # getting user id from jwt
     current_user_id = get_jwt_identity()
@@ -183,6 +215,8 @@ def remove_event_from_favorites(event_slug):
     # Remove from favorites
     User.objects(id=current_user_id).update_one(pull__favorite_events=event)
     user.reload()
+
+    logger.info(f"Removed event {event_slug} from favorites for user: {user.email}")
 
     return jsonify({
         "status": "success",

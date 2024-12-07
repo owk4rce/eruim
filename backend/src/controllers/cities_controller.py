@@ -8,10 +8,20 @@ from backend.src.utils.exceptions import UserError
 from backend.src.models.city import City
 from backend.src.utils.pre_mongo_validators import validate_city_data
 
+import logging
+
+logger = logging.getLogger("backend")
+
 
 def get_all_cities():
     """
+    Get list of all cities.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
+
+    Returns:
+        Cities list in requested language
     """
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -37,7 +47,13 @@ def get_all_cities():
 
 def get_existing_city(slug):
     """
+    Get single city by slug.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
+
+    Returns:
+        City data in requested language
     """
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -66,15 +82,17 @@ def get_existing_city(slug):
 
 def create_new_city():
     """
-    Create new city
+    Create new city using GeoNames validation.
 
-    Query Body Parameters:
-        - name_en (str, required): Name in English
+    Expected body:
+        {
+            "name_en": "Jerusalem"  # English name only
+        }
 
-    Returns:
-        JSON response with:
-        - status: success/error
-        - message: new city created
+    Process:
+        1. Validates English name
+        2. Gets translations from GeoNames
+        3. Creates city with all names
     """
     data = request.get_json()
 
@@ -87,7 +105,7 @@ def create_new_city():
     if City.objects(name_en=data["name_en"]).first():
         raise UserError(f"City with name {data['name_en']} already exists", 409)
 
-    names = validate_and_get_names(data['name_en'])     # geovalidation and getting names
+    names = validate_and_get_names(data['name_en'])  # geovalidation and getting names
 
     city = City(name_en=names["en"],
                 name_ru=names["ru"],
@@ -96,23 +114,18 @@ def create_new_city():
                 )
     city.save()
 
+    logger.info(f"Created new city: {names['en']}")
+
     return jsonify({
-        'status': 'success',
-        'message': 'City created successfully',
+        "status": "success",
+        "message": "City created successfully",
         "data": city.to_response_dict()
     }), 201
 
 
 def delete_existing_city(slug):
     """
-    Delete existing city if there are no venues
-
-    Returns:
-        JSON response with:
-        - status: error
-        - message: event type updated
-
-        204
+    Delete city if no associated venues exist.
     """
     # Find existing city
     city = City.objects(slug=slug).first()
@@ -126,6 +139,8 @@ def delete_existing_city(slug):
             "Cannot delete this city. Please delete all associated venues first.",
             409
         )
+
+    logger.info(f"Deleting city: {city.name_en}")
 
     # If no associated venues, delete the city
     city.delete()

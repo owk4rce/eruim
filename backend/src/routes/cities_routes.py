@@ -15,6 +15,54 @@ cities_bp = Blueprint("cities", __name__, url_prefix="/cities")
 @public_routes_limit()
 @no_body_in_request()
 def get_cities():
+    """
+    Get list of all cities
+    ---
+    tags:
+      - Cities
+    parameters:
+      - in: query
+        name: lang
+        type: string
+        enum: [en, ru, he]
+        description: Preferred language for response
+        required: false
+    responses:
+      200:
+        description: List of cities
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: City name in requested language
+                    example: Jerusalem
+                  slug:
+                    type: string
+                    example: jerusalem
+            count:
+              type: integer
+              example: 1
+      400:
+        description: Invalid language parameter
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: "Unsupported language: fr"
+    """
     return get_all_cities()
 
 
@@ -22,7 +70,54 @@ def get_cities():
 @public_routes_limit()
 @no_body_in_request()
 def get_city(slug):
-    """Handle GET request for retrieving one city"""
+    """
+    Get single city by slug
+    ---
+    tags:
+      - Cities
+    parameters:
+      - in: path
+        name: slug
+        type: string
+        required: true
+        description: City slug
+      - in: query
+        name: lang
+        type: string
+        enum: [en, ru, he]
+        description: Preferred language for response
+        required: false
+    responses:
+      200:
+        description: City details
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            data:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: City name in requested language
+                  example: Jerusalem
+                slug:
+                  type: string
+                  example: jerusalem
+      404:
+        description: City not found
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: "City with slug jerusalem not found"
+    """
     return get_existing_city(slug)
 
 
@@ -33,6 +128,81 @@ def get_city(slug):
 @require_json()
 @no_args_in_request()
 def create_city():
+    """
+    Create new city
+    ---
+    tags:
+      - Cities
+    security:
+      - Bearer: []
+      - Cookie: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - name_en
+          properties:
+            name_en:
+              type: string
+              description: English name of the city
+              example: Jerusalem
+    responses:
+      201:
+        description: City created successfully
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: City created successfully
+            data:
+              type: object
+              properties:
+                name_ru:
+                  type: string
+                  example: Иерусалим
+                name_en:
+                  type: string
+                  example: Jerusalem
+                name_he:
+                  type: string
+                  example: ירושלים
+                slug:
+                  type: string
+                  example: jerusalem
+      409:
+        description: City already exists
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: "City with name Jerusalem already exists"
+      404:
+        description: City not found in Israel
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: "City 'Jerusalem' not found in Israel"
+      401:
+        $ref: '#/responses/UnauthorizedError'
+      403:
+        $ref: '#/responses/ForbiddenError'
+    """
     return create_new_city()
 
 
@@ -42,5 +212,48 @@ def create_city():
 @no_body_in_request()
 @no_args_in_request()
 def delete_city(slug):
-    """Handle DELETE request for deleting one city"""
+    """
+    Delete city
+    ---
+    tags:
+      - Cities
+    security:
+      - Bearer: []
+      - Cookie: []
+    parameters:
+      - in: path
+        name: slug
+        type: string
+        required: true
+        description: City slug
+    responses:
+      204:
+        description: City successfully deleted
+      404:
+        description: City not found
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: "City with slug 'jerusalem' not found"
+      409:
+        description: Cannot delete city with associated venues
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: "Cannot delete this city. Please delete all associated venues first."
+      401:
+        $ref: '#/responses/UnauthorizedError'
+      403:
+        $ref: '#/responses/ForbiddenError'
+    """
     return delete_existing_city(slug)

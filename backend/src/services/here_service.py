@@ -32,10 +32,10 @@ def validate_and_get_location(full_address_he):
         item = data["items"][0]
 
         return {
-            'type': 'Point',
-            'coordinates': [
-                item['position']['lng'],
-                item['position']['lat']
+            'type': "Point",
+            "coordinates": [
+                item["position"]["lng"],
+                item["position"]["lat"]
             ]
         }
     except RequestException as e:

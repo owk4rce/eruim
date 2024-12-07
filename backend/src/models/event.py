@@ -1,7 +1,6 @@
 import pytz
 from mongoengine import Document, StringField, ValidationError, DateTimeField, ReferenceField, IntField, BooleanField, \
     CASCADE
-from datetime import datetime
 from backend.src.utils.constants import PRICE_TYPE_TRANSLATIONS, TIMEZONE
 
 
@@ -73,7 +72,7 @@ class Event(Document):
 
     price_type = StringField(
         required=True,
-        choices=['free', 'tba', 'fixed', 'starting_from']
+        choices=["free", "tba", "fixed", "starting_from"]
     )
 
     price_amount = IntField(
@@ -83,7 +82,7 @@ class Event(Document):
 
     image_path = StringField(
         required=True,
-        default='/uploads/img/events/default/default.png',
+        default="/uploads/img/events/default/default.png",
         regex=r'^/uploads/img/events/[\w-]+/[\w-]+\.png$'
     )
 
@@ -94,15 +93,15 @@ class Event(Document):
     )
 
     meta = {
-        'collection': 'events',
-        'indexes': [
+        "collection": "events",
+        "indexes": [
             "name_ru",
             "name_en",
             "name_he",
-            'venue',
-            'event_type',
-            'start_date',
-            'is_active',
+            "venue",
+            "event_type",
+            "start_date",
+            "is_active",
             "slug"
         ]
     }
@@ -111,21 +110,21 @@ class Event(Document):
         """Validate event dates and price logic"""
 
         if self.end_date < self.start_date:
-            raise ValidationError('End date must be after start date')
+            raise ValidationError("End date must be after start date")
 
         # Validate price logic
-        if self.price_type in ['fixed', 'starting_from']:
+        if self.price_type in ["fixed", "starting_from"]:
             if self.price_amount is None:
-                raise ValidationError('Price amount is required for fixed and starting_from price types')
-        elif self.price_type in ['free', 'tba']:
+                raise ValidationError("Price amount is required for fixed and starting_from price types")
+        elif self.price_type in ["free", "tba"]:
             if self.price_amount is not None:
-                raise ValidationError('Price amount should not be set for free or TBA events')
+                raise ValidationError("Price amount should not be set for free or TBA events")
 
-    def get_name(self, lang='en'):
-        return getattr(self, f'name_{lang}')
+    def get_name(self, lang="en"):
+        return getattr(self, f"name_{lang}")
 
-    def get_description(self, lang='en'):
-        return getattr(self, f'description_{lang}')
+    def get_description(self, lang="en"):
+        return getattr(self, f"description_{lang}")
 
     @property
     def is_single_day_event(self):
@@ -147,14 +146,15 @@ class Event(Document):
         """Format price based on price_type in specified language"""
         price_name = PRICE_TYPE_TRANSLATIONS[self.price_type][lang]
 
-        if self.price_type == 'free':
-            return price_name
-        elif self.price_type == 'tba':
-            return price_name
-        elif self.price_type == 'fixed':
-            return f"{self.price_amount}₪"
-        elif self.price_type == 'starting_from':
-            return f"{price_name} {self.price_amount} ₪"
+        match self.price_type:
+            case "free":
+                return price_name
+            case "tba":
+                return price_name
+            case "fixed":
+                return f"{self.price_amount} ₪"
+            case "starting_from":
+                return f"{price_name} {self.price_amount} ₪"
 
     def to_response_dict(self, lang=None):
         """Convert venue to API response format"""

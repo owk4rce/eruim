@@ -16,10 +16,18 @@ from backend.src.utils.pre_mongo_validators import validate_venue_data
 from backend.src.utils.transliteration import transliterate_en_to_he, transliterate_en_to_ru
 from backend.src.models.event import Event
 
+import logging
+logger = logging.getLogger('backend')
+
 
 def get_all_venues():
     """
+    Get filtered list of venues.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
+        is_active (optional): Filter by active status
+        city (optional): Filter by city slug
     """
     unknown_args = set(request.args.keys()) - ALLOWED_VENUE_GET_ALL_ARGS
     if unknown_args:
@@ -67,7 +75,10 @@ def get_all_venues():
 
 def get_existing_venue(slug):
     """
+    Get single venue by slug.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
     """
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -96,7 +107,26 @@ def get_existing_venue(slug):
 
 def create_new_venue():
     """
+    Create new venue with auto-translation and geocoding.
 
+    Accepts multipart/form-data or application/json.
+    Required fields:
+        - address_en
+        - city_en
+        - venue_type_en
+    Optional fields:
+        - At least one name (name_en/name_ru/name_he)
+        - At least one description
+        - contact info (phone/email/website)
+        - image file
+
+    Process:
+        1. Validates all data and image
+        2. Auto-translates missing languages
+        3. Validates/creates city if needed
+        4. Gets coordinates from HERE API
+        5. Saves image if provided
+        6. Creates venue with generated slug
     """
     file = None
     if request.content_type.startswith("multipart/form-data"):  # expecting file via form
@@ -207,6 +237,8 @@ def create_new_venue():
         )
         city.save()
 
+        logger.info(f"Created new city during venue creation: {names['en']}")
+
     address_en = data["address_en"]
 
     # Translate address to Hebrew and combine with Hebrew city name
@@ -250,6 +282,8 @@ def create_new_venue():
 
     venue.save()
 
+    logger.info(f"Created new venue: {name_en} in {city.name_en}")
+
     return jsonify({
         'status': 'success',
         'message': 'Venue created successfully',
@@ -259,8 +293,22 @@ def create_new_venue():
 
 def full_update_existing_venue(slug):
     """
-    full update venue
+    Full update of venue.
 
+    Accepts multipart/form-data or application/json.
+    Required all fields:
+        - names, descriptions in all languages
+        - address_en, city_en, venue_type_en
+        - is_active
+        - contact info
+    Optional:
+        - new image file
+
+    Process:
+        1. Validates all data
+        2. Updates location if address changed
+        3. Updates image and paths if provided
+        4. Updates all fields atomically
     """
     file = None
     if request.content_type.startswith("multipart/form-data"):  # expecting file via form
@@ -373,6 +421,8 @@ def full_update_existing_venue(slug):
     # reload to get new for response
     venue.reload()
 
+    logger.info(f"Full update of venue: {venue.name_en}")
+
     return jsonify({
         'status': 'success',
         'message': 'Venue fully updated successfully',
@@ -382,8 +432,18 @@ def full_update_existing_venue(slug):
 
 def part_update_existing_venue(slug):
     """
-    part update venue
+    Partial update of venue.
 
+    Accepts multipart/form-data or application/json.
+    Optional fields:
+        - Any venue field to update
+        - New image file
+
+    Process:
+        1. Validates provided fields
+        2. Updates location if address changed
+        3. Updates image and paths if needed
+        4. Updates only changed fields
     """
     file = None
     if request.content_type.startswith("multipart/form-data"):  # expecting file via form
@@ -506,6 +566,7 @@ def part_update_existing_venue(slug):
         Venue.objects(slug=slug).update_one(**update_data)
         venue.reload()
         updated_params = [param.replace('set__', '') for param in update_data.keys()]
+        logger.info(f"Partial update of venue {venue.name_en}, fields: {', '.join(updated_params)}")
         message = f"Updated parameters: {', '.join(updated_params)}"
         if unchanged_params:
             message += f". Unchanged parameters: {', '.join(unchanged_params)}"

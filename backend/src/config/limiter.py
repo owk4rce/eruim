@@ -8,10 +8,16 @@ logger = logging.getLogger('backend')
 
 def get_user_identifier():
     """
-    Get unique identifier for rate limiting based on user role+id or IP address.
+    Get unique identifier for rate limiting based on user authentication status.
+
+    For authenticated users, returns string in format "role:user_id" to enable
+    role-based rate limiting. For unauthenticated users, returns "ip:address".
+
+    This allows different rate limits for different user roles while still
+    maintaining rate limiting for anonymous users.
 
     Returns:
-        str: Format "role:user_id" for authenticated users or "ip:address" for others
+        str: Identifier in format "role:user_id" or "ip:address"
     """
     from backend.src.models.user import User  # avoid cyclic import
 
@@ -19,8 +25,11 @@ def get_user_identifier():
     if jwt_identity:
         user = User.objects(id=jwt_identity).first()
         if user:
+            logger.debug(f"Rate limit identifier created for {user.role} user: {jwt_identity}")
             return f"{user.role}:{jwt_identity}"  # if jwt, limits by role
-    return f"ip:{get_remote_address()}"
+    ip = get_remote_address()
+    logger.debug(f"Rate limit identifier created for IP: {ip}")
+    return f"ip:{ip}"
 
 
 # Limiter for public routes
@@ -40,7 +49,12 @@ protected_routes_limiter = Limiter(
 def public_routes_limit():
     """
     Rate limit decorator for public routes.
-    Applies 30 requests per minute limit based on IP address.
+
+    Applies a general rate limit of 30 requests per minute based on IP address.
+    This helps prevent abuse of public endpoints while allowing reasonable usage.
+
+    Returns:
+        function: Limiter decorator configured for public routes
     """
     return public_routes_limiter.limit(
         "30 per minute",
@@ -50,8 +64,14 @@ def public_routes_limit():
 
 def auth_limit():
     """
-    Rate limit decorator for authentication routes.
-    Applies 3 per minute and 9 per hour limits to prevent brute force attempts.
+    Rate limit decorator specifically for authentication routes.
+
+    Applies stricter limits to prevent brute force attacks:
+    - 3 requests per minute
+    - 9 requests per hour
+
+    Returns:
+        function: Limiter decorator configured for authentication routes
     """
     return public_routes_limiter.limit(
         "3 per minute, 9 per hour",
@@ -61,17 +81,20 @@ def auth_limit():
 
 def protected_routes_limit():
     """
-    Rate limit decorator for protected routes.
+    Rate limit decorator for protected routes with role-based limits.
+
     Applies different limits based on user role:
-    - admin: 60/min
-    - manager: 40/min
-    - user: 20/min
-    - others: 10/min
+    - Admin: 60 requests per minute
+    - Manager: 40 requests per minute
+    - User: 20 requests per minute
+    - Unauthenticated: 10 requests per minute
+
+    Returns:
+        function: Limiter decorator with dynamic limits based on user role
     """
     def get_limit():
         """
-        Determine rate limit based on user role identifier.
-        Used in protected_routes_limit decorator.
+        Determine specific rate limit based on user role.
 
         Returns:
             str: Rate limit rule (requests per minute)

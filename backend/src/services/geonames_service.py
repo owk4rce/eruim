@@ -15,7 +15,7 @@ def validate_and_get_names(city_name_en):
     params = {
         "q": city_name_en,
         "country": 'IL',  # Filter for Israel
-        'maxRows': 1,
+        "maxRows": 1,
         "username": geonames_username,
         "style": "full"
     }
@@ -31,7 +31,7 @@ def validate_and_get_names(city_name_en):
     if not data.get("geonames"):
         raise UserError(f"City '{city_name_en}' not found in Israel", 404)
 
-    city_data = data['geonames'][0]
+    city_data = data["geonames"][0]
 
     found_name_en = city_data["name"]
 
@@ -39,25 +39,23 @@ def validate_and_get_names(city_name_en):
         raise UserError(f"Maybe you have a typo in the city's name. Found '{found_name_en}'.", 404)
 
     names = {
-        'en': found_name_en,
-        'ru': None,
-        'he': None
+        "en": found_name_en,
+        "ru": None,
+        "he": None
     }
 
     # Extract Russian and Hebrew names from alternateNames in the response
-    for alt_name in city_data.get('alternateNames', []):
-        if alt_name.get('lang') == 'ru':
-            names['ru'] = alt_name.get('name')
-        elif alt_name.get('lang') == 'he':
-            names['he'] = alt_name.get('name')
+    for alt_name in city_data.get("alternateNames", []):
+        if alt_name.get("lang") == 'ru':
+            names["ru"] = alt_name.get("name")
+        elif alt_name.get("lang") == "he":
+            names["he"] = alt_name.get("name")
 
     # Validate we have all required names
-    if not all([names['ru'], names['he']]):
+    if not all([names["ru"], names["he"]]):
         raise ExternalServiceError(
             f"Could not find all required translations for {city_name_en}. "
             f"Found: RU: {names['ru']}, HE: {names['he']}", 404
         )
 
     return names
-
-

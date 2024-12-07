@@ -260,12 +260,12 @@ class User(Document):
 
     def clean(self):
         """Validate and hash password before saving"""
-        if self._data.get('password'):
-            if not self.id or self._get_changed_fields().count('password'):
+        if self._data.get("password"):
+            if not self.id or self._get_changed_fields().count("password"):
                 # First validate the password
                 self.validate_password(self.password)
                 # If validation passes, hash the password
                 self.password = bcrypt.hashpw(
-                    self.password.encode('utf-8'),
+                    self.password.encode("utf-8"),
                     bcrypt.gensalt()
-                ).decode('utf-8')
+                ).decode("utf-8")

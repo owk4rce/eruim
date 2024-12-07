@@ -9,17 +9,29 @@ from backend.src.utils.file_utils import validate_image, delete_folder_from_path
     save_image_from_request, rename_image_folder
 from backend.src.utils.constants import (SUPPORTED_LANGUAGES, ALLOWED_EVENT_GET_ALL_ARGS,
                                          ALLOWED_EVENT_CREATE_BODY_PARAMS, STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS,
-                                         ALLOWED_EVENT_UPDATE_BODY_PARAMS, TIMEZONE)
+                                         ALLOWED_EVENT_UPDATE_BODY_PARAMS)
 from backend.src.utils.pre_mongo_validators import validate_event_data
 from backend.src.utils.transliteration import transliterate_en_to_he, transliterate_en_to_ru
 from backend.src.models.event import Event
 from backend.src.models.event_type import EventType
 from backend.src.utils.date_utils import convert_to_utc, convert_to_local, remove_timezone
 
+import logging
+logger = logging.getLogger("backend")
+
 
 def get_all_events():
     """
+    Get filtered list of events.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
+        is_active (optional): Filter by active status
+        city (optional): Filter by city slug
+        venue (optional): Filter by venue slug
+        sort (optional): Sort by date (asc/desc)
+
+    Note: city and venue filters are mutually exclusive
     """
     unknown_args = set(request.args.keys()) - ALLOWED_EVENT_GET_ALL_ARGS
     if unknown_args:
@@ -91,7 +103,10 @@ def get_all_events():
 
 def get_existing_event(slug):
     """
+    Get single event by slug.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
     """
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -120,7 +135,26 @@ def get_existing_event(slug):
 
 def create_new_event():
     """
+    Create new event with auto-translation.
 
+    Accepts multipart/form-data or application/json.
+    Required fields:
+        - venue_slug
+        - event_type_slug
+        - start_date (YYYY-MM-DD HH:MM or YYYY-MM-DD)
+        - end_date
+        - price_type (free/tba/fixed/starting_from)
+    Optional fields:
+        - At least one name (name_en/name_ru/name_he)
+        - At least one description
+        - price_amount (required for fixed/starting_from)
+        - image file
+
+    Process:
+        1. Validates all data and image if present
+        2. Auto-translates missing languages
+        3. Saves image if provided
+        4. Creates event with generated slug (name_en + date)
     """
     file = None
     if request.content_type.startswith("multipart/form-data"):  # expecting file via form
@@ -255,17 +289,34 @@ def create_new_event():
     event.save()
     event.reload()  # correct time (while saving it is in our timezone but stores in utc)
 
+    logger.info(f"Created new event: {name_en}")
+
     return jsonify({
-        'status': 'success',
-        'message': 'Event created successfully.',
+        "status": "success",
+        "message": "Event created successfully.",
         "data": event.to_response_dict()
     }), 201
 
 
 def full_update_existing_event(slug):
     """
-    full update venue
+    Full update of event.
 
+    Accepts multipart/form-data or application/json.
+    Required all fields:
+        - venue_slug, event_type_slug
+        - start/end dates
+        - names and descriptions in all languages
+        - price_type and amount if needed
+        - is_active
+    Optional:
+        - new image file
+
+    Process:
+        1. Validates all data
+        2. Updates image if provided
+        3. Updates slug if name or date changed
+        4. Updates all fields
     """
     file = None
     if request.content_type.startswith("multipart/form-data"):  # expecting file via form
@@ -339,7 +390,7 @@ def full_update_existing_event(slug):
     event.end_date = data["end_date"]
     event.price_type = data["price_type"]
     event.price_amount = data.get("price_amount")
-    event.is_active = data['is_active']
+    event.is_active = data["is_active"]
 
     # date format for slug
     local_date = convert_to_local(data["start_date"])
@@ -347,8 +398,8 @@ def full_update_existing_event(slug):
 
     new_slug = slugify(f"{data['name_en']}-{slug_date}")
 
-    if new_slug != event.slug and not event.image_path.endswith('default.png'):
-        new_image_path = rename_image_folder('events', event.slug, new_slug)
+    if new_slug != event.slug and not event.image_path.endswith("default.png"):
+        new_image_path = rename_image_folder("events", event.slug, new_slug)
         event.image_path = new_image_path
 
     event.slug = new_slug
@@ -360,17 +411,29 @@ def full_update_existing_event(slug):
     event.save()
     event.reload()  # correct time (while saving it is in our timezone but stores in utc)
 
+    logger.info(f"Full update of event: {event.name_en}")
+
     return jsonify({
-        'status': 'success',
-        'message': 'Event fully updated successfully',
+        "status": "success",
+        "message": "Event fully updated successfully",
         "data": event.to_response_dict()
     }), 200
 
 
 def part_update_existing_event(slug):
     """
-    part update venue
+    Partial update of event.
 
+    Accepts multipart/form-data or application/json.
+    Optional fields:
+        - Any event field to update
+        - New image file
+
+    Process:
+        1. Validates provided data
+        2. Updates only changed fields
+        3. Updates slug if name or date changed
+        4. Tracks and reports changed/unchanged fields
     """
     file = None
     if request.content_type.startswith("multipart/form-data"):  # expecting file via form
@@ -486,6 +549,7 @@ def part_update_existing_event(slug):
 
         event.save()
         event.reload()  # correct time (while saving it is in our timezone but stores in utc)
+        logger.info(f"Partial update of event {event.name_en}, fields: {', '.join(updated_params)}")
         message = f"Updated parameters: {', '.join(updated_params)}"
         if unchanged_params:
             message += f". Unchanged parameters: {', '.join(unchanged_params)}"
@@ -501,13 +565,15 @@ def part_update_existing_event(slug):
 
 def delete_existing_event(slug):
     """
-
+    Delete event and its image files.
     """
 
     # Find existing event
     event = Event.objects(slug=slug).first()
     if not event:
         raise UserError(f"Event with slug '{slug}' not found", 404)
+
+    logger.info(f"Deleting event: {event.name_en}")
 
     # delete the event and image from image_path
     delete_folder_from_path(event.image_path)

@@ -99,7 +99,7 @@ class Venue(Document):
 
     image_path = StringField(
         required=True,
-        default='/uploads/img/venues/default/default.png',
+        default="/uploads/img/venues/default/default.png",
         regex=r'^/uploads/img/venues/[\w-]+/[\w-]+\.png$'
     )
 
@@ -110,7 +110,7 @@ class Venue(Document):
     )
 
     meta = {
-        'collection': 'venues',  # MongoDB collection name
+        "collection": "venues",  # MongoDB collection name
         "indexes": ["name_ru",
                     "name_en",
                     "name_he",

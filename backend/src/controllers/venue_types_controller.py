@@ -8,10 +8,16 @@ from backend.src.utils.constants import ALLOWED_VENUE_TYPE_BODY_PARAMS, SUPPORTE
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.pre_mongo_validators import validate_venue_type_data
 
+import logging
+logger = logging.getLogger('backend')
+
 
 def get_all_venue_types():
     """
+    Get list of all venue types.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
     """
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -37,7 +43,10 @@ def get_all_venue_types():
 
 def get_existing_venue_type(slug):
     """
+    Get single venue type by slug.
 
+    Query params:
+        lang (optional): Response language (en/ru/he)
     """
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
@@ -66,7 +75,20 @@ def get_existing_venue_type(slug):
 
 def create_new_venue_type():
     """
+    Create new venue type with auto-translation.
 
+    Expected body:
+        At least one name in any supported language:
+        {
+            "name_en": "museum" and/or
+            "name_ru": "музей" and/or
+            "name_he": "מוזיאון"
+        }
+
+    Process:
+        1. Validates provided name
+        2. Auto-translates to other languages
+        3. Creates venue type with slug from English name
     """
     data = request.get_json()
 
@@ -124,6 +146,8 @@ def create_new_venue_type():
                            )
     venue_type.save()
 
+    logger.info(f"Created new venue type: {name_en}")
+
     return jsonify({
         "status": "success",
         "message": "Venue type created successfully",
@@ -133,7 +157,14 @@ def create_new_venue_type():
 
 def full_update_existing_venue_type(slug):
     """
+    Full update of venue type.
 
+    Expected body:
+        {
+            "name_en": "museum",
+            "name_ru": "музей",
+            "name_he": "מוזיאון"
+        }
     """
     data = request.get_json()
 
@@ -168,6 +199,8 @@ def full_update_existing_venue_type(slug):
     # reload to get new for response
     venue_type.reload()
 
+    logger.info(f"Full update of venue type: {data['name_en']}")
+
     return jsonify({
         "status": "success",
         "message": "Venue type fully updated successfully.",
@@ -177,17 +210,15 @@ def full_update_existing_venue_type(slug):
 
 def part_update_existing_venue_type(slug):
     """
-    Partial update existing venue type
+    Partial update of venue type.
 
-    Query Body Parameters:
-        - name_en (str, optional): Name in English
-        - name_ru (str, optional): Name in Russian
-        - name_he (str, optional): Name in Hebrew
-
-    Returns:
-        JSON response with:
-        - status: success/error
-        - message: venue type updated
+    Expected body:
+        One or more names to update:
+        {
+            "name_en": "museum" and/or
+            "name_ru": "музей" and/or
+            "name_he": "מוזיאון"
+        }
     """
     data = request.get_json()
 
@@ -209,9 +240,6 @@ def part_update_existing_venue_type(slug):
     validate_venue_type_data(data)  # pre-mongo validation
 
     # Track changes
-    updated_fields = []
-    unchanged_fields = []
-
     update_data = {}
     unchanged_params = []
 
@@ -231,6 +259,7 @@ def part_update_existing_venue_type(slug):
         VenueType.objects(slug=slug).update_one(**update_data)
         venue_type.reload()
         updated_params = [param.replace('set__', '') for param in update_data.keys()]
+        logger.info(f"Partial update of venue type {venue_type.name_en}, fields: {', '.join(updated_params)}")
         message = f"Updated parameters: {', '.join(updated_params)}"
         if unchanged_params:
             message += f". Unchanged parameters: {', '.join(unchanged_params)}"
@@ -246,14 +275,7 @@ def part_update_existing_venue_type(slug):
 
 def delete_existing_venue_type(slug):
     """
-    Delete existing venue type if there are no venues with this type
-
-    Returns:
-        JSON response with:
-        - status: error
-        - message: venue type updated
-
-        204
+    Delete venue type if no associated venues exist.
     """
     # Find existing venue type
     venue_type = VenueType.objects(slug=slug).first()
@@ -269,6 +291,7 @@ def delete_existing_venue_type(slug):
         )
 
     # If no associated venues, delete the venue type
+    logger.info(f"Deleting venue type: {venue_type.name_en}")
     venue_type.delete()
 
     # Return 204 No Content for successful deletion
