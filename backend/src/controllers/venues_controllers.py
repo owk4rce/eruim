@@ -106,7 +106,7 @@ def create_new_venue():
 
         data = request.form.to_dict()
         if not data:
-            raise UserError("Form data is empty")
+            raise UserError("Form data is empty.")
 
         if "image" in request.files:
             file = request.files["image"]

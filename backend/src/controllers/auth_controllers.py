@@ -1,9 +1,10 @@
+import re
 from backend.src.models.user import User
 from flask import request, jsonify, current_app
 from flask_jwt_extended import create_access_token
 from datetime import datetime
 
-from backend.src.utils.constants import ALLOWED_AUTH_BODY_PARAMS, REQUIRED_AUTH_BODY_PARAMS
+from backend.src.utils.constants import ALLOWED_AUTH_BODY_PARAMS, REQUIRED_AUTH_BODY_PARAMS, USER_PATTERNS
 from backend.src.utils.email_utils import send_reset_password_email
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.pre_mongo_validators import validate_user_data
@@ -157,7 +158,7 @@ def request_password_reset():
     # for security reason we are not telling if the email exists in our db
     universal_response = {
         "status": "success",
-        "message": "If the email exists, reset instructions will be sent"
+        "message": "If the email exists, reset instructions will be sent."
     }
 
     # Find user by email
@@ -225,15 +226,26 @@ def confirm_password_reset():
     if "token" not in data or "new_password" not in data:
         raise UserError("Token and new password are required.")
 
+    if not re.match(USER_PATTERNS["password"], data["new_password"]):
+        raise UserError(
+            'Password requirements: '
+            'At least 8 characters long. '
+            'Only English letters (a-z, A-Z). '
+            'At least one uppercase letter. '
+            'At least one lowercase letter. '
+            'At least one number. '
+            'At least one special character (@$!%*?&).'
+        )
+
     user = User.objects(reset_password_token=data["token"]).first()
     if not user or not user.is_reset_token_valid(data["token"]):
         raise UserError("Invalid or expired reset token.")
 
-    user.password = data["new_password"]  # модель сама хэширует пароль
-    user.clear_reset_password_token()  # очищаем использованный токен
+    user.password = data["new_password"]
+    user.clear_reset_password_token()  # clear token after use
     user.save()
 
     return jsonify({
         "status": "success",
-        "message": "Password has been reset successfully"
+        "message": "Password has been reset successfully."
     }), 200

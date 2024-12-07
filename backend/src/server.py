@@ -9,6 +9,7 @@ from backend.src.config.limiter import public_routes_limiter, protected_routes_l
 from backend.src.config.logger import setup_logger
 from backend.src.routes import api_v1_bp
 from backend.src.utils.error_handlers import register_error_handlers
+from backend.src.utils.event_scheduler import init_scheduler
 
 app = Flask(__name__)
 
@@ -34,6 +35,7 @@ jwt = JWTManager(app)
 if not app.config.get('TESTING', False):
     public_routes_limiter.init_app(app)
     protected_routes_limiter.init_app(app)
+    init_scheduler(app)  # Initialize scheduler
 
 
 @jwt.unauthorized_loader

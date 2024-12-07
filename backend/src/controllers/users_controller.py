@@ -10,9 +10,6 @@ def get_all_users():
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in GET-method is restricted.")
-
     unknown_args = set(request.args.keys()) - {"is_active", "role"}
     if unknown_args:
         raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
@@ -55,12 +52,6 @@ def get_existing_user(user_id):
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in GET-method is restricted.")
-    #
-    # if request.args:
-    #     raise UserError(f"Arguments in this request are restricted.")
-
     # Get one user from database
     user = User.objects(id=user_id).first()
 
@@ -80,13 +71,6 @@ def create_new_user():
     """
 
     """
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     unknown_params = set(data.keys()) - ALLOWED_USER_BODY_PARAMS
@@ -124,13 +108,6 @@ def full_update_existing_user(user_id):
     """
 
     """
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     # Find existing user
@@ -168,13 +145,6 @@ def part_update_existing_user(user_id):
     """
 
     """
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     # Find existing user
@@ -228,9 +198,6 @@ def delete_existing_user(user_id):
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in DELETE-method is restricted.")
-
     # Find existing user
     user = User.objects(id=user_id).first()
     if not user:
