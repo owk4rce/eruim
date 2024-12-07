@@ -32,8 +32,31 @@ def convert_to_utc(local_date_str, is_start=True):
 
 def convert_to_local(utc_date, tz_name='Asia/Jerusalem'):
     """
+    Convert UTC datetime to local timezone.
+    If input date has no timezone info, assumes it's UTC.
 
+    Args:
+        utc_date (datetime): Datetime object (assumed UTC if no timezone)
+        tz_name (str): Target timezone name (default: 'Asia/Jerusalem')
+
+    Returns:
+        datetime: Localized datetime in specified timezone
     """
-    local_tz = pytz.timezone(tz_name)
-    return utc_date.astimezone(local_tz)
+    # Explicitly treat naive datetime as UTC
+    if not utc_date.tzinfo:
+        utc_date = pytz.UTC.localize(utc_date)
 
+    # Convert to target timezone
+    target_tz = pytz.timezone(tz_name)
+    return utc_date.astimezone(target_tz)
+
+
+def remove_timezone(dt):
+    # check if we have tz
+    if dt.tzinfo:
+        # replace tz to None
+        dt_without_timezone = dt.replace(tzinfo=None)
+    else:
+        dt_without_timezone = dt
+
+    return dt_without_timezone

@@ -1,10 +1,9 @@
 from flask import request, jsonify
 from slugify import slugify
-from datetime import datetime
 
 from backend.src.models.city import City
 from backend.src.models.venue import Venue
-from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
+from backend.src.services.translation_service import translate_with_google
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.file_utils import validate_image, delete_folder_from_path, \
     save_image_from_request
@@ -15,7 +14,7 @@ from backend.src.utils.pre_mongo_validators import validate_event_data
 from backend.src.utils.transliteration import transliterate_en_to_he, transliterate_en_to_ru
 from backend.src.models.event import Event
 from backend.src.models.event_type import EventType
-from backend.src.utils.date_utils import convert_to_utc, convert_to_local
+from backend.src.utils.date_utils import convert_to_utc, convert_to_local, remove_timezone
 
 
 def get_all_events():
@@ -232,8 +231,8 @@ def create_new_event():
         description_he=description_he,
         event_type=event_type,
         venue=venue,
-        start_date=TIMEZONE.localize(data["start_date"]),
-        end_date=TIMEZONE.localize(data["end_date"]),
+        start_date=data["start_date"],
+        end_date=data["end_date"],
         price_type=data["price_type"],
         price_amount=data.get("price_amount"),
         slug=slugify(f"{name_en}-{slug_date}")
@@ -326,8 +325,8 @@ def full_update_existing_event(slug):
     event.description_he = data["description_he"]
     event.event_type = event_type
     event.venue = venue
-    event.start_date = TIMEZONE.localize(data["start_date"])
-    event.end_date = TIMEZONE.localize(data["end_date"])
+    event.start_date = data["start_date"]
+    event.end_date = data["end_date"]
     event.price_type = data["price_type"]
     event.price_amount = data.get("price_amount")
     event.is_active = data['is_active']
@@ -402,14 +401,15 @@ def part_update_existing_event(slug):
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
     if "start_date" in data and "end_date" not in data:
-        data["start_date"] = convert_to_utc(data["start_date"])
+        data["start_date"] = remove_timezone(convert_to_utc(data["start_date"]))
         data["end_date"] = event.end_date
     elif "end_date" in data and "start_date" not in data:
         data["start_date"] = event.start_date
-        data["end_date"] = convert_to_utc(data["end_date"], False)
+        data["end_date"] = remove_timezone(convert_to_utc(data["end_date"], False))
     elif "start_date" in data and "end_date" in data:
-        data["start_date"] = convert_to_utc(data["start_date"])
-        data["end_date"] = convert_to_utc(data["end_date"], False)
+        data["start_date"] = remove_timezone(convert_to_utc(data["start_date"]))
+        data["end_date"] = remove_timezone(convert_to_utc(data["end_date"], False))
+
     validate_event_data(data)  # we need both of dates or none of them
 
     # Track changes
@@ -449,26 +449,25 @@ def part_update_existing_event(slug):
                 if current_value != value:
                     setattr(event, param, value)
                     updated_params.append(param)
-
-                    # Update slug if English name or start_date changes
-                    if param in ["name_en", "start_date"]:
-                        # date format for slug
-                        local_date = convert_to_local(data.get("start_date", event.start_date))
-                        slug_date = local_date.strftime('%Y-%m-%d-%H-%M')
-                        event.slug = slugify(f"{event.name_en}-{slug_date}")
-                        if "slug" not in updated_params:
-                            updated_params.append("slug")
                 else:
                     unchanged_params.append(param)
 
     if updated_params:
+        # Update slug if English name or start_date changes
+        if "start_date" in updated_params or "name_en" in updated_params:
+            # date format for slug
+            local_date = convert_to_local(data.get("start_date", event.start_date))
+            print(local_date)
+            slug_date = local_date.strftime('%Y-%m-%d-%H-%M')
+            event.slug = slugify(f"{event.name_en}-{slug_date}")
+
         event.save()
         event.reload()  # correct time (while saving it is in our timezone but stores in utc)
-        message = f"Updated fields: {', '.join(updated_params)}"
+        message = f"Updated parameters: {', '.join(updated_params)}"
         if unchanged_params:
-            message += f". Unchanged fields: {', '.join(unchanged_params)}"
+            message += f". Unchanged parameters: {', '.join(unchanged_params)}"
     else:
-        message = "No fields were updated as all values are the same."
+        message = "No parameters were updated as all values are the same."
 
     return jsonify({
         "status": "success",

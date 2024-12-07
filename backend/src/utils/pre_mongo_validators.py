@@ -204,6 +204,7 @@ def validate_event_data(data):
                             "numbers, spaces and punctuation"
                         )
                     case 'description_ru':
+                        print(data["description_ru"])
                         raise UserError(
                             "Russian description must be 20-2000 characters long and contain only Russian letters, "
                             "numbers, spaces and punctuation"

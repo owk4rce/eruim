@@ -10,21 +10,21 @@ class Event(Document):
         required=True,
         min_length=3,
         max_length=200,
-        regex=r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„"]+$'
+        regex=r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„":]+$'
     )
 
     name_en = StringField(
         required=True,
         min_length=3,
         max_length=200,
-        regex=r'^[a-zA-Z\d\s\-–—\'\"«»]+$'
+        regex=r'^[a-zA-Z\d\s\-–—\'\"«»:]+$'
     )
 
     name_he = StringField(
         required=True,
         min_length=3,
         max_length=200,
-        regex=r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳]+$'
+        regex=r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳:]+$'
     )
 
     description_ru = StringField(
@@ -109,6 +109,7 @@ class Event(Document):
 
     def clean(self):
         """Validate event dates and price logic"""
+
         if self.end_date < self.start_date:
             raise ValidationError('End date must be after start date')
 
@@ -153,7 +154,7 @@ class Event(Document):
         elif self.price_type == 'fixed':
             return f"{self.price_amount}₪"
         elif self.price_type == 'starting_from':
-            return f"{price_name} {self.price_amount}₪"
+            return f"{price_name} {self.price_amount} ₪"
 
     def to_response_dict(self, lang=None):
         """Convert venue to API response format"""

@@ -121,9 +121,9 @@ STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS = {
 
 EVENT_PATTERNS = {
     # Names
-    'name_en': r'^[a-zA-Z\d\s\-–—\'\"«»]+$',
-    'name_ru': r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„"]+$',
-    'name_he': r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳]+$',
+    'name_en': r'^[a-zA-Z\d\s\-–—\'\"«»:]+$',
+    'name_ru': r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„":]+$',
+    'name_he': r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳:]+$',
 
     # Descriptions
     'description_en': r'^[a-zA-Z\d\s\-–—.,!?()\'\"«»:\[\];]+$',
