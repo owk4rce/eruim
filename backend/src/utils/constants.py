@@ -120,15 +120,15 @@ STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS = {
 }
 
 EVENT_PATTERNS = {
-    # Names
-    'name_en': r'^[a-zA-Z\d\s\-–—\'\"«»:]+$',
-    'name_ru': r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„":]+$',
-    'name_he': r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳:]+$',
+    # Names (3-200 chars)
+    'name_en': r'^[a-zA-Z\d\s\-–—\'\"«»:]{3,200}$',
+    'name_ru': r'^[а-яА-ЯёЁ\d\s\-–—\'\"«»„":]{3,200}$',
+    'name_he': r'^[\u0590-\u05FF\d\s\-–—\'\"«»״׳:]{3,200}$',
 
-    # Descriptions
-    'description_en': r'^[a-zA-Z\d\s\-–—.,!?()\'\"«»:\[\];]+$',
-    'description_ru': r'^[а-яА-ЯёЁ\d\s\-–—.,!?()\'\"«»„":\[\];]+$',
-    'description_he': r'^[\u0590-\u05FF\d\s\-–—.,!?()\'\"«»״׳:\[\];]+$',
+    # Descriptions (20-2000 chars)
+    'description_en': r'^[a-zA-Z\d\s\-–—.,!?()\'\"«»:\[\];]{20,2000}$',
+    'description_ru': r'^[а-яА-ЯёЁ\d\s\-–—.,!?()\'\"«»„":\[\];]{20,2000}$',
+    'description_he': r'^[\u0590-\u05FF\d\s\-–—.,!?()\'\"«»״׳:\[\];]{20,2000}$'
 }
 
 

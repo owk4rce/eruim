@@ -50,7 +50,15 @@ def save_image_from_request(file, entity_name, slug):
 
     img = Image.open(file)
     img = img.convert('RGBA')
-    img = img.resize((400, 400))
+
+    # getting current size
+    width, height = img.size
+    # new width and height to fit our proportions
+    new_width = 400
+    new_height = int((height / width) * new_width)
+    # saving new size with good quality
+    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
     img.save(file_path, 'PNG')
 
     return IMAGE_PATHS[entity_name].format(slug=slug, filename=filename)
@@ -74,3 +82,50 @@ def delete_folder_from_path(image_path):
 
     if os.path.exists(folder_to_delete):
         shutil.rmtree(folder_to_delete)
+
+
+def rename_image_folder(entity_name, old_slug, new_slug):
+    """
+    Rename image folder when entity's slug changes.
+    Example: when venue's slug changes from 'old-cafe' to 'new-cafe',
+    renames '/uploads/img/venues/old-cafe' to '/uploads/img/venues/new-cafe'
+
+    Args:
+        entity_name (str): Type of entity ('venues' or 'events')
+        old_slug (str): Current slug
+        new_slug (str): New slug
+
+    Returns:
+        str: New image path if rename successful, old path if folder not found
+
+    Raises:
+        ConfigurationError: If rename operation fails
+    """
+    old_dir = os.path.join(UPLOAD_FOLDER, 'img', entity_name, old_slug)
+    new_dir = os.path.join(UPLOAD_FOLDER, 'img', entity_name, new_slug)
+
+    # If folder doesn't exist (e.g. using default image) - skip
+    if not os.path.exists(old_dir):
+        return IMAGE_PATHS[entity_name].format(
+            slug=new_slug,
+            filename=f"{new_slug}.png"
+        )
+
+    try:
+        # Rename folder
+        os.rename(old_dir, new_dir)
+
+        # Rename image file inside
+        old_file = os.path.join(new_dir, f"{old_slug}.png")
+        new_file = os.path.join(new_dir, f"{new_slug}.png")
+
+        if os.path.exists(old_file):
+            os.rename(old_file, new_file)
+
+        return IMAGE_PATHS[entity_name].format(
+            slug=new_slug,
+            filename=f"{new_slug}.png"
+        )
+
+    except Exception as e:
+        raise ConfigurationError(f"Failed to rename image folder: {str(e)}")

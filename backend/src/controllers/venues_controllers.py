@@ -7,7 +7,8 @@ from backend.src.services.geonames_service import validate_and_get_names
 from backend.src.services.here_service import validate_and_get_location
 from backend.src.services.translation_service import translate_with_google
 from backend.src.utils.exceptions import UserError
-from backend.src.utils.file_utils import validate_image, delete_folder_from_path, save_image_from_request
+from backend.src.utils.file_utils import validate_image, delete_folder_from_path, save_image_from_request, \
+    rename_image_folder
 from backend.src.utils.constants import (STRICTLY_REQUIRED_VENUE_CREATE_BODY_PARAMS, ALLOWED_VENUE_GET_ALL_ARGS,
                                          SUPPORTED_LANGUAGES, ALLOWED_VENUE_CREATE_BODY_PARAMS,
                                          ALLOWED_VENUE_UPDATE_BODY_PARAMS)
@@ -325,6 +326,9 @@ def full_update_existing_venue(slug):
     if not city:
         raise UserError(f"City '{data['city_en']}' not found", 404)
 
+    # Calculate new slug once
+    new_slug = slugify(data["name_en"])
+
     # collecting simple updates
     update_data = {
         "set__name_en": data["name_en"],
@@ -342,8 +346,13 @@ def full_update_existing_venue(slug):
         "set__is_active": is_active,
         "set__venue_type": venue_type,
         "set__city": city,
-        "set__slug": slugify(data["name_en"])
+        "set__slug": new_slug
     }
+
+    # Check if slug changed and update image path is needed
+    if venue.slug != new_slug and not venue.image_path.endswith('default.png'):
+        new_image_path = rename_image_folder('venues', venue.slug, new_slug)
+        update_data["set__image_path"] = new_image_path
 
     if venue.address_en != data['address_en']:
         # Find coordinates if core address_en changed
@@ -421,10 +430,6 @@ def part_update_existing_venue(slug):
     update_data = {}
     unchanged_params = []
 
-    if "image" in request.files:
-        image_path = save_image_from_request(file, "venues", venue.slug)
-        update_data["set__image_path"] = image_path
-
     for param, value in data.items():
         match param:
             case "is_active":
@@ -478,7 +483,11 @@ def part_update_existing_venue(slug):
                 # Check if name_en changed
                 if value != venue.name_en:
                     update_data["set__name_en"] = value
-                    update_data["set__slug"] = slugify(value)
+                    new_slug = slugify(value)
+                    update_data["set__slug"] = new_slug
+                    if not venue.image_path.endswith('default.png'):
+                        new_image_path = rename_image_folder('venues', venue.slug, new_slug)
+                        update_data["set__image_path"] = new_image_path
                 else:
                     unchanged_params.append(param)
             case _:
@@ -488,6 +497,10 @@ def part_update_existing_venue(slug):
                     update_data[f"set__{param}"] = value
                 else:
                     unchanged_params.append(param)
+
+    if "image" in request.files:
+        image_path = save_image_from_request(file, "venues", venue.slug)
+        update_data["set__image_path"] = image_path
 
     if update_data:
         Venue.objects(slug=slug).update_one(**update_data)

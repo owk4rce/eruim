@@ -6,7 +6,7 @@ from backend.src.models.venue import Venue
 from backend.src.services.translation_service import translate_with_google
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.file_utils import validate_image, delete_folder_from_path, \
-    save_image_from_request
+    save_image_from_request, rename_image_folder
 from backend.src.utils.constants import (SUPPORTED_LANGUAGES, ALLOWED_EVENT_GET_ALL_ARGS,
                                          ALLOWED_EVENT_CREATE_BODY_PARAMS, STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS,
                                          ALLOWED_EVENT_UPDATE_BODY_PARAMS, TIMEZONE)
@@ -342,9 +342,16 @@ def full_update_existing_event(slug):
     event.is_active = data['is_active']
 
     # date format for slug
-    local_date = convert_to_local(data.get("start_date"))
+    local_date = convert_to_local(data["start_date"])
     slug_date = local_date.strftime('%Y-%m-%d-%H-%M')
-    event.slug = slugify(f"{event.name_en}-{slug_date}")
+
+    new_slug = slugify(f"{data['name_en']}-{slug_date}")
+
+    if new_slug != event.slug and not event.image_path.endswith('default.png'):
+        new_image_path = rename_image_folder('events', event.slug, new_slug)
+        event.image_path = new_image_path
+
+    event.slug = new_slug
 
     if "image" in request.files:
         image_path = save_image_from_request(file, "events", event.slug)
@@ -426,11 +433,6 @@ def part_update_existing_event(slug):
     updated_params = []
     unchanged_params = []
 
-    if "image" in request.files:
-        image_path = save_image_from_request(file, "events", event.slug)
-        event.image_path = image_path
-        updated_params.append("image_path")
-
     for param, value in data.items():
         match param:
             case "event_type_slug":
@@ -462,14 +464,25 @@ def part_update_existing_event(slug):
                 else:
                     unchanged_params.append(param)
 
+    if "image" in request.files:
+        image_path = save_image_from_request(file, "events", event.slug)
+        event.image_path = image_path
+        updated_params.append("image_path")
+
     if updated_params:
         # Update slug if English name or start_date changes
         if "start_date" in updated_params or "name_en" in updated_params:
             # date format for slug
             local_date = convert_to_local(data.get("start_date", event.start_date))
-            print(local_date)
             slug_date = local_date.strftime('%Y-%m-%d-%H-%M')
-            event.slug = slugify(f"{event.name_en}-{slug_date}")
+            name_en = data["name_en"] if "name_en" in data else event.name_en
+            new_slug = slugify(f"{name_en}-{slug_date}")
+
+            if new_slug != event.slug and not event.image_path.endswith('default.png'):
+                new_image_path = rename_image_folder('events', event.slug, new_slug)
+                event.image_path = new_image_path
+
+            event.slug = new_slug
 
         event.save()
         event.reload()  # correct time (while saving it is in our timezone but stores in utc)
