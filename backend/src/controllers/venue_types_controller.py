@@ -13,9 +13,6 @@ def get_all_venue_types():
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in GET-method is restricted.")
-
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
         raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
@@ -33,7 +30,8 @@ def get_all_venue_types():
 
     return jsonify({
         "status": "success",
-        "data": venue_types_data
+        "data": venue_types_data,
+        "count": len(venue_types_data)
     }), 200
 
 
@@ -41,9 +39,6 @@ def get_existing_venue_type(slug):
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in GET-method is restricted.")
-
     unknown_args = set(request.args.keys()) - {"lang"}
     if unknown_args:
         raise UserError(f"Unknown arguments in GET-request: {', '.join(unknown_args)}")
@@ -73,18 +68,17 @@ def create_new_venue_type():
     """
 
     """
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     unknown_params = set(data.keys()) - ALLOWED_VENUE_TYPE_BODY_PARAMS
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
+
+    if "name_en" in data:
+        data["name_en"] = data["name_en"].lower()   # not punishing managers for uppercase in body
+
+    if "name_ru" in data:
+        data["name_ru"] = data["name_ru"].lower()
 
     validate_venue_type_data(data)  # pre-mongo validation
 
@@ -141,13 +135,6 @@ def full_update_existing_venue_type(slug):
     """
 
     """
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     # Find existing venue type
@@ -163,14 +150,23 @@ def full_update_existing_venue_type(slug):
     if missing_params:
         raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
+    data["name_en"] = data["name_en"].lower()  # not punishing managers for uppercase in body
+    data["name_ru"] = data["name_ru"].lower()
+
     validate_venue_type_data(data)  # pre-mongo validation
 
-    venue_type.name_en = data["name_en"]
-    venue_type.name_he = data["name_he"]
-    venue_type.name_ru = data["name_ru"]
-    venue_type.slug = slugify(data["name_en"])
+    update_data = {
+        "set__name_en": data["name_en"],
+        "set__name_ru": data["name_ru"],
+        "set__name_he": data["name_he"],
+        "set__slug": slugify(data["name_en"])
+    }
 
-    venue_type.save()
+    # atomic update
+    VenueType.objects(slug=slug).update_one(**update_data)
+
+    # reload to get new for response
+    venue_type.reload()
 
     return jsonify({
         "status": "success",
@@ -193,13 +189,6 @@ def part_update_existing_venue_type(slug):
         - status: success/error
         - message: venue type updated
     """
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     # Find existing venue type
@@ -211,34 +200,42 @@ def part_update_existing_venue_type(slug):
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
+    if "name_en" in data:   # not punishing managers for uppercase in body
+        data["name_en"] = data["name_en"].lower()
+
+    if "name_ru" in data:
+        data["name_ru"] = data["name_ru"].lower()
+
     validate_venue_type_data(data)  # pre-mongo validation
 
     # Track changes
     updated_fields = []
     unchanged_fields = []
 
-    for param in data:
-        current_value = getattr(venue_type, param)
-        new_value = data[param]
+    update_data = {}
+    unchanged_params = []
 
-        if current_value != new_value:
-            setattr(venue_type, param, new_value)
-            updated_fields.append(param)
+    for param, value in data.items():
+        current_value = getattr(venue_type, param)
+
+        if current_value != value:
+            update_data[f"set__{param}"] = value
 
             # Update slug if English name changes
             if param == "name_en":
-                venue_type.slug = slugify(new_value)
-                updated_fields.append("slug")
+                update_data["set__slug"] = slugify(value)
         else:
-            unchanged_fields.append(param)
+            unchanged_params.append(param)
 
-    if updated_fields:
-        venue_type.save()
-        message = f"Updated fields: {', '.join(updated_fields)}"
-        if unchanged_fields:
-            message += f". Unchanged fields: {', '.join(unchanged_fields)}"
+    if update_data:
+        VenueType.objects(slug=slug).update_one(**update_data)
+        venue_type.reload()
+        updated_params = [param.replace('set__', '') for param in update_data.keys()]
+        message = f"Updated parameters: {', '.join(updated_params)}"
+        if unchanged_params:
+            message += f". Unchanged parameters: {', '.join(unchanged_params)}"
     else:
-        message = "No fields were updated as all values are the same."
+        message = "No parameters were updated as all values are the same."
 
     return jsonify({
         "status": "success",
@@ -258,9 +255,6 @@ def delete_existing_venue_type(slug):
 
         204
     """
-    # if request.data:
-    #     raise UserError("Using body in DELETE-method is restricted.")
-
     # Find existing venue type
     venue_type = VenueType.objects(slug=slug).first()
     if not venue_type:

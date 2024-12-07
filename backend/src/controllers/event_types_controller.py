@@ -31,7 +31,7 @@ def get_all_event_types():
     return jsonify({
         "status": "success",
         "data": event_types_data,
-        "count": len(event_types_data)
+        "count": EventType.objects.count()
     }), 200
 
 
@@ -75,7 +75,7 @@ def create_new_event_type():
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
     if "name_en" in data:
-        data["name_en"] = data["name_en"].lower()
+        data["name_en"] = data["name_en"].lower()   # not punishing managers for uppercase in body
 
     if "name_ru" in data:
         data["name_ru"] = data["name_ru"].lower()
@@ -160,7 +160,7 @@ def full_update_existing_event_type(slug):
     if missing_params:
         raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
-    data["name_en"] = data["name_en"].lower()
+    data["name_en"] = data["name_en"].lower()   # not punishing managers for uppercase in body
     data["name_ru"] = data["name_ru"].lower()
 
     validate_event_type_data(data)  # pre-mongo validation
@@ -210,34 +210,39 @@ def part_update_existing_event_type(slug):
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
+    if "name_en" in data:   # not punishing managers for uppercase in body
+        data["name_en"] = data["name_en"].lower()
+
+    if "name_ru" in data:
+        data["name_ru"] = data["name_ru"].lower()
+
     validate_event_type_data(data)  # pre-mongo validation
 
     # Track changes
-    updated_fields = []
-    unchanged_fields = []
+    update_data = {}
+    unchanged_params = []
 
-    for param in data:
+    for param, value in data.items():
         current_value = getattr(event_type, param)
-        new_value = data[param]
 
-        if current_value != new_value:
-            setattr(event_type, param, new_value)
-            updated_fields.append(param)
+        if current_value != value:
+            update_data[f"set__{param}"] = value
 
             # Update slug if English name changes
             if param == "name_en":
-                event_type.slug = slugify(new_value)
-                updated_fields.append("slug")
+                update_data["set__slug"] = slugify(value)
         else:
-            unchanged_fields.append(param)
+            unchanged_params.append(param)
 
-    if updated_fields:
-        event_type.save()
-        message = f"Updated fields: {', '.join(updated_fields)}"
-        if unchanged_fields:
-            message += f". Unchanged fields: {', '.join(unchanged_fields)}"
+    if update_data:
+        EventType.objects(slug=slug).update_one(**update_data)
+        event_type.reload()
+        updated_params = [param.replace('set__', '') for param in update_data.keys()]
+        message = f"Updated parameters: {', '.join(updated_params)}"
+        if unchanged_params:
+            message += f". Unchanged parameters: {', '.join(unchanged_params)}"
     else:
-        message = "No fields were updated as all values are the same."
+        message = "No parameters were updated as all values are the same."
 
     return jsonify({
         "status": "success",
@@ -257,9 +262,6 @@ def delete_existing_event_type(slug):
 
         204
     """
-    # if request.data:
-    #     raise UserError("Using body in DELETE-method is restricted.")
-
     # Find existing event type
     event_type = EventType.objects(slug=slug).first()
     if not event_type:

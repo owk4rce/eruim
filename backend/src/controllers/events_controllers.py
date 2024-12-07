@@ -4,20 +4,18 @@ from datetime import datetime
 
 from backend.src.models.city import City
 from backend.src.models.venue import Venue
-from backend.src.models.venue_type import VenueType
-from backend.src.services.here_service import validate_and_get_location
 from backend.src.services.translation_service import translate_with_google, translate_with_mymemory
 from backend.src.utils.exceptions import UserError
 from backend.src.utils.file_utils import validate_image, delete_folder_from_path, \
     save_image_from_request
-from backend.src.utils.constants import (SUPPORTED_LANGUAGES,
-                                         ALLOWED_VENUE_UPDATE_BODY_PARAMS, ALLOWED_EVENT_GET_ALL_ARGS,
+from backend.src.utils.constants import (SUPPORTED_LANGUAGES, ALLOWED_EVENT_GET_ALL_ARGS,
                                          ALLOWED_EVENT_CREATE_BODY_PARAMS, STRICTLY_REQUIRED_EVENT_CREATE_BODY_PARAMS,
                                          ALLOWED_EVENT_UPDATE_BODY_PARAMS, TIMEZONE)
-from backend.src.utils.pre_mongo_validators import validate_venue_data, validate_event_data
+from backend.src.utils.pre_mongo_validators import validate_event_data
 from backend.src.utils.transliteration import transliterate_en_to_he, transliterate_en_to_ru
 from backend.src.models.event import Event
 from backend.src.models.event_type import EventType
+from backend.src.utils.date_utils import convert_to_utc, convert_to_local
 
 
 def get_all_events():
@@ -149,14 +147,8 @@ def create_new_event():
     if missing_params:
         raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
-    # date format for slug
-    slug_date = data['start_date'].replace(' ', '-')
-
-    try:
-        data["start_date"] = datetime.strptime(data["start_date"], '%Y-%m-%d %H:%M')
-        data["end_date"] = datetime.strptime(data["end_date"], '%Y-%m-%d %H:%M')
-    except ValueError:
-        raise UserError('Invalid date format. Use YYYY-MM-DD HH:MM')
+    data["start_date"] = convert_to_utc(data["start_date"])
+    data["end_date"] = convert_to_utc(data["end_date"], False)
 
     validate_event_data(data)
 
@@ -226,6 +218,10 @@ def create_new_event():
 
     description_he = transliterate_en_to_he(description_he)
     description_ru = transliterate_en_to_ru(description_ru)
+
+    # date format for slug
+    local_date = convert_to_local(data.get("start_date"))
+    slug_date = local_date.strftime('%Y-%m-%d-%H-%M')
 
     event = Event(
         name_en=name_en,
@@ -309,14 +305,8 @@ def full_update_existing_event(slug):
     if missing_params:
         raise UserError(f"Required body parameters are missing: {', '.join(missing_params)}")
 
-    # date format for slug
-    slug_date = data['start_date'].replace(' ', '-')
-
-    try:
-        data["start_date"] = datetime.strptime(data["start_date"], '%Y-%m-%d %H:%M')
-        data["end_date"] = datetime.strptime(data["end_date"], '%Y-%m-%d %H:%M')
-    except ValueError:
-        raise UserError('Invalid date format. Use YYYY-MM-DD HH:MM')
+    data["start_date"] = convert_to_utc(data["start_date"])
+    data["end_date"] = convert_to_utc(data["end_date"], False)
 
     validate_event_data(data)
 
@@ -341,7 +331,11 @@ def full_update_existing_event(slug):
     event.price_type = data["price_type"]
     event.price_amount = data.get("price_amount")
     event.is_active = data['is_active']
-    event.slug = slugify(f"{data['name_en']}-{slug_date}")
+
+    # date format for slug
+    local_date = convert_to_local(data.get("start_date"))
+    slug_date = local_date.strftime('%Y-%m-%d-%H-%M')
+    event.slug = slugify(f"{event.name_en}-{slug_date}")
 
     if "image" in request.files:
         image_path = save_image_from_request(file, "events", event.slug)
@@ -407,16 +401,15 @@ def part_update_existing_event(slug):
     if unknown_params:
         raise UserError(f"Unknown parameters in request: {', '.join(unknown_params)}")
 
-    try:
-        if "start_date" in data and "end_date" not in data:
-            data["start_date"] = datetime.strptime(data["start_date"], '%Y-%m-%d %H:%M')
-            data["end_date"] = event.end_date
-        if "end_date" in data and "start_date" not in data:
-            data["start_date"] = event.start_date
-            data["end_date"] = datetime.strptime(data["end_date"], '%Y-%m-%d %H:%M')
-    except ValueError:
-        raise UserError('Invalid date format. Use YYYY-MM-DD HH:MM')
-
+    if "start_date" in data and "end_date" not in data:
+        data["start_date"] = convert_to_utc(data["start_date"])
+        data["end_date"] = event.end_date
+    elif "end_date" in data and "start_date" not in data:
+        data["start_date"] = event.start_date
+        data["end_date"] = convert_to_utc(data["end_date"], False)
+    elif "start_date" in data and "end_date" in data:
+        data["start_date"] = convert_to_utc(data["start_date"])
+        data["end_date"] = convert_to_utc(data["end_date"], False)
     validate_event_data(data)  # we need both of dates or none of them
 
     # Track changes
@@ -461,7 +454,8 @@ def part_update_existing_event(slug):
                     # Update slug if English name or start_date changes
                     if param in ["name_en", "start_date"]:
                         # date format for slug
-                        slug_date = data.get('start_date', event.start_date).strftime('%Y-%m-%d-%H-%M')
+                        local_date = convert_to_local(data.get("start_date", event.start_date))
+                        slug_date = local_date.strftime('%Y-%m-%d-%H-%M')
                         event.slug = slugify(f"{event.name_en}-{slug_date}")
                         if "slug" not in updated_fields:
                             updated_fields.append("slug")

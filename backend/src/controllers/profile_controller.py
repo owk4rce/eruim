@@ -12,12 +12,6 @@ def get_user_profile():
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in GET-method is restricted.")
-    #
-    # if request.args:
-    #     raise UserError(f"Arguments in this request are restricted.")
-
     # getting user id from jwt
     current_user_id = get_jwt_identity()
 
@@ -39,13 +33,6 @@ def full_update_user_profile():
     """
 
     """
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     # getting user id from jwt
@@ -84,13 +71,6 @@ def part_update_user_profile():
     """
 
     """
-    # if not request.is_json:
-    #     raise UserError("Content-Type must be application/json.", 415)
-    #
-    # data = request.get_json()
-    # if not data:
-    #     raise UserError("Body parameters are missing.")
-
     data = request.get_json()
 
     # getting user id from jwt
@@ -108,33 +88,32 @@ def part_update_user_profile():
     validate_user_data(data)  # pre-mongo validation
 
     # Track changes
-    updated_fields = []
-    unchanged_fields = []
+    updated_params = []
+    unchanged_params = []
 
-    for param in data:
+    for param, value in data.items():
         if param == 'password':  # check if new password is different from stored in hash
-            if user.verify_password(data['password']):
-                unchanged_fields.append(param)
+            if user.verify_password(value):
+                unchanged_params.append(param)
             else:
-                setattr(user, param, data['password'])
-                updated_fields.append(param)
+                setattr(user, param, value)
+                updated_params.append(param)
         else:
             current_value = getattr(user, param)
-            new_value = data[param]
 
-            if current_value != new_value:
-                setattr(user, param, new_value)
-                updated_fields.append(param)
+            if current_value != value:
+                setattr(user, param, value)
+                updated_params.append(param)
             else:
-                unchanged_fields.append(param)
+                unchanged_params.append(param)
 
-    if updated_fields:
+    if updated_params:
         user.save()
-        message = f"Updated fields: {', '.join(updated_fields)}"
-        if unchanged_fields:
-            message += f". Unchanged fields: {', '.join(unchanged_fields)}"
+        message = f"Updated parameters: {', '.join(updated_params)}"
+        if unchanged_params:
+            message += f". Unchanged parameters: {', '.join(unchanged_params)}"
     else:
-        message = "No fields were updated as all values are the same."
+        message = "No parameters were updated as all values are the same."
 
     return jsonify({
         "status": "success",
@@ -147,10 +126,6 @@ def add_event_to_favorites(event_slug):
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in this request is restricted.")
-
-    # getting user id from jwt
     current_user_id = get_jwt_identity()
 
     # Get user and event
@@ -171,7 +146,8 @@ def add_event_to_favorites(event_slug):
         }), 200
 
     # Add to favorites
-    user.add_to_favorites(event)
+    User.objects(id=current_user_id).update_one(add_to_set__favorite_events=event)
+    user.reload()
 
     return jsonify({
         "status": "success",
@@ -184,9 +160,6 @@ def remove_event_from_favorites(event_slug):
     """
 
     """
-    # if request.data:
-    #     raise UserError("Using body in DELETE-method is restricted.")
-
     # getting user id from jwt
     current_user_id = get_jwt_identity()
 
@@ -208,7 +181,8 @@ def remove_event_from_favorites(event_slug):
         }), 200
 
     # Remove from favorites
-    user.remove_from_favorites(event)
+    User.objects(id=current_user_id).update_one(pull__favorite_events=event)
+    user.reload()
 
     return jsonify({
         "status": "success",

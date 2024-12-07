@@ -31,7 +31,7 @@ def get_all_cities():
     return jsonify({
         "status": "success",
         "data": cities_data,
-        "count": len(cities_data)
+        "count": City.objects.count()
     }), 200
 
 
