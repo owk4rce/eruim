@@ -12,6 +12,7 @@ from backend.src.config.swagger import get_swagger_config, get_swagger_template
 from backend.src.routes import api_v1_bp
 from backend.src.utils.error_handlers import register_error_handlers
 from backend.src.config.scheduler import init_scheduler
+from backend.src.utils.exceptions import UserError
 
 app = Flask(__name__)
 
@@ -49,6 +50,9 @@ if not app.config.get('TESTING', False):
 @jwt.unauthorized_loader
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Unauthorized access attempt: {err_msg}")
+    if request.files:
+        return jsonify({
+            "error": "Authentication required."}), 401
     return jsonify({
         "error": "Authentication required.",
         "message": err_msg
