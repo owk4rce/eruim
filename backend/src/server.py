@@ -1,5 +1,5 @@
 from flasgger import Swagger
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_talisman import Talisman
@@ -17,6 +17,15 @@ app = Flask(__name__)
 
 # Initialize logger with default settings
 logger = setup_logger(is_initial=True)
+
+@app.before_request
+def log_request_info():
+    logger.info("=== New Request ===")
+    logger.info(f"Path: {request.path}")
+    logger.info(f"Method: {request.method}")
+    logger.info(f"Content-Type: {request.content_type}")
+    logger.info(f"Content-Length: {request.content_length}")
+    logger.info(f"Headers: {dict(request.headers)}")
 
 # ADD NEW SETTINGS HERE, BEFORE try-except BLOCK:
 # Max request size
