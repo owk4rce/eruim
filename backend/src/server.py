@@ -71,17 +71,31 @@ if not app.config.get('TESTING', False):
     init_scheduler(app)  # Initialize scheduler
 
 
+# @jwt.unauthorized_loader
+# def custom_unauthorized_response(err_msg):
+#     logger.warning(f"Unauthorized access attempt: {err_msg}")
+#     return jsonify({
+#         "error": "Authentication required.",
+#         "message": err_msg
+#     }), 401
+
 @jwt.unauthorized_loader
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Entering unauthorized handler")
     logger.warning(f"Unauthorized access attempt: {err_msg}")
+
+    # Close the request stream if it's multipart
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        logger.warning("Closing multipart stream")
+        request.stream.close()
+
     response = jsonify({
         "error": "Authentication required.",
         "message": err_msg
     })
+    response.headers['Content-Type'] = 'application/json'
     logger.warning("Response prepared")
     return response, 401
-
 
 @jwt.expired_token_loader
 def custom_expired_token_response(jwt_header, jwt_payload):
