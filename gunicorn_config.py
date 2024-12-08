@@ -1,9 +1,29 @@
-bind = "0.0.0.0:10000"
-workers = 4
-worker_class = "gevent"
-timeout = 300
-max_request_line = 0
-limit_request_fields = 32768
-limit_request_field_size = 0
-worker_connections = 1000
-keepalive = 2
+import multiprocessing
+
+# Основные настройки
+bind = "0.0.0.0:8000"  # Адрес и порт, на которых будет работать приложение
+workers = multiprocessing.cpu_count() * 2 + 1  # Количество воркеров
+worker_class = "sync"  # Тип воркеров: sync для стандартных запросов
+threads = 4  # Увеличьте, если приложение использует многопоточность
+timeout = 120  # Увеличенный таймаут для долгих запросов
+
+# Логирование
+accesslog = "-"  # Логи запросов (stdout)
+errorlog = "-"  # Логи ошибок (stdout)
+loglevel = "debug"  # Уровень логирования: debug для отладки
+
+# Оптимизация и устойчивость
+preload_app = True  # Предварительная загрузка приложения
+max_requests = 1000  # Перезапуск воркеров после обработки 1000 запросов
+max_requests_jitter = 100  # Случайный разброс перезапуска для предотвращения одновременного перезапуска
+
+# Ограничения для запросов
+limit_request_line = 4094  # Максимальная длина строки запроса
+limit_request_fields = 100  # Максимальное количество заголовков
+limit_request_field_size = 8190  # Максимальный размер одного заголовка
+
+# Keep-alive
+keepalive = 5  # Время ожидания новых запросов по keep-alive соединению
+
+# PID-файл для мониторинга
+pidfile = "/tmp/gunicorn.pid"  # Файл для хранения PID процесса
