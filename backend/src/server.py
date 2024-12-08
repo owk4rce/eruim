@@ -18,6 +18,22 @@ app = Flask(__name__)
 # Initialize logger with default settings
 logger = setup_logger(is_initial=True)
 
+# ADD NEW SETTINGS HERE, BEFORE try-except BLOCK:
+# Max request size
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+
+# File upload settings
+app.config['UPLOAD_EXTENSIONS'] = ['.jpg', '.png', '.jpeg']
+app.config['UPLOAD_PATH'] = 'uploads'
+
+# CORS settings
+CORS(app,
+     resources={r"/api/*": {"origins": "*"}},
+     supports_credentials=True,
+     expose_headers=["Content-Type", "Authorization"],
+     allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
+     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+
 try:
     config = load_config()
     app.config.update(config)
@@ -37,7 +53,7 @@ except Exception as e:
 
 app.url_map.strict_slashes = False  # no need for the end slash in endpoint
 
-CORS(app)
+#CORS(app)
 jwt = JWTManager(app)
 
 if not app.config.get('TESTING', False):
@@ -49,14 +65,10 @@ if not app.config.get('TESTING', False):
 @jwt.unauthorized_loader
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Unauthorized access attempt: {err_msg}")
-    return {
+    return jsonify({
         "error": "Authentication required.",
         "message": err_msg
-    }, 401
-    # return jsonify({
-    #     "error": "Authentication required.",
-    #     "message": err_msg
-    # }), 401
+    }), 401
 
 
 @jwt.expired_token_loader
