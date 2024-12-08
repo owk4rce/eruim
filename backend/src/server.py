@@ -51,13 +51,12 @@ if not app.config.get('TESTING', False):
 @jwt.unauthorized_loader
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Unauthorized access attempt: {err_msg}")
-    if 1:
-        # if request.files:
-        #     time.sleep(2)
-        return jsonify({
-            "error": "Authentication required.",
-            "message": "Missing Authorization Header; Missing cookie token."
-        }), 401
+    if request.files:
+        time.sleep(1)
+    return jsonify({
+        "error": "Authentication required.",
+        "message": "Missing Authorization Header; Missing cookie token."
+    }), 401
 
 
 @jwt.expired_token_loader
