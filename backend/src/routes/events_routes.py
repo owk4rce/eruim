@@ -110,7 +110,7 @@ def get_event(slug):
 
 
 @events_bp.route("/", methods=["POST"])
-@jwt_required()
+#@jwt_required()
 @manager_required()
 @protected_routes_limit()
 @no_args_in_request()
