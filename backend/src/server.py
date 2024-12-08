@@ -20,11 +20,11 @@ logger = setup_logger(is_initial=True)
 
 # ADD NEW SETTINGS HERE, BEFORE try-except BLOCK:
 # Max request size
-#app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
 # File upload settings
-# app.config['UPLOAD_EXTENSIONS'] = ['.jpg', '.png', '.jpeg']
-# app.config['UPLOAD_PATH'] = 'uploads'
+app.config['UPLOAD_EXTENSIONS'] = ['.jpg', '.png', '.jpeg']
+app.config['UPLOAD_PATH'] = 'uploads'
 
 # CORS settings
 CORS(app,
