@@ -87,12 +87,17 @@ else:
         strict_transport_security=True,
         session_cookie_secure=True,
         content_security_policy={
-            'default-src': "'self' 'unsafe-hashes'",
-            'img-src': '*',
-            'script-src': "'self' 'sha256-hash'",
-            'style-src': "'self' 'sha256-hash'",
-            'font-src': "'self' fonts.gstatic.com",
-            'base-uri': "'self'"
+            'default-src': ["'self'"],
+            'img-src': ["'self'", '*'],
+            'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            'style-src': ["'self'", "'unsafe-inline'"],
+            'font-src': ["'self'", "data:", "https://fonts.gstatic.com"],
+            'connect-src': ["'self'"],
+            # external для Swagger
+            'worker-src': ["'self'", "blob:"],
+            'child-src': ["'self'", "blob:"],
+            'frame-src': ["'self'"],
+            'object-src': ["'none'"]
         }
         # content_security_policy={
         #     'default-src': "'self'",
