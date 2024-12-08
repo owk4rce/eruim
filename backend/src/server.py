@@ -49,10 +49,11 @@ if not app.config.get('TESTING', False):
 @jwt.unauthorized_loader
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Unauthorized access attempt: {err_msg}")
-    return jsonify({
-        "error": "Authentication required.",
-        "message": err_msg
-    }), 401
+    return "test"
+    # return jsonify({
+    #     "error": "Authentication required.",
+    #     "message": err_msg
+    # }), 401
 
 
 @jwt.expired_token_loader
