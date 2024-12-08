@@ -44,7 +44,8 @@ def register_error_handlers(app):
 
     @app.errorhandler(429)
     def handle_ratelimit_error(error):
-        logger.warning(f"Rate limit exceeded - IP: {request.remote_addr}, Path: {request.path}, Method: {request.method}")
+        logger.warning(f"Rate limit exceeded - IP: {request.remote_addr}, "
+                       f"Path: {request.path}, Method: {request.method}")
         return jsonify({
             'status': 'error',
             'message': str(error.description)
