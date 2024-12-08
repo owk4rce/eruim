@@ -10,14 +10,10 @@ logger = logging.getLogger('backend')
 
 def send_reset_password_email(recipient_email, reset_link):
     """
-    Send password reset email with link
+    Send password reset email with reset link.
 
-    Args:
-        recipient_email: User's email address
-        reset_link: Password reset link with token
-
-    Raises:
-        ConfigurationError: If email configuration is invalid
+    Sends HTML email using Gmail SMTP with service account credentials.
+    Message includes a password reset link that expires in 2 hours.
     """
     try:
         # Get email settings from config
@@ -59,7 +55,11 @@ def send_reset_password_email(recipient_email, reset_link):
 
 def send_account_activation_email(recipient_email, activation_link):
     """
+    Send account activation email with confirmation link.
 
+    Sends HTML email using Gmail SMTP with service account credentials.
+    Message includes an activation link that expires in 48 hours.
+    Account will be deleted if not activated within this time.
     """
     try:
         # Get email settings from config

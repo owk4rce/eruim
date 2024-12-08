@@ -3,7 +3,23 @@ from mongoengine import Document, StringField
 
 class EventType(Document):
     """
+    Represents a type of event in the system with multilingual support.
 
+    Used for categorizing events into types like 'concert', 'exhibition', etc.
+    Each type must be unique and have names in three languages.
+    Auto-converts English and Russian names to lowercase before saving.
+
+    Fields:
+        name_ru (str): Name in Russian, 3-20 chars, only lowercase Russian letters with space/hyphen
+        name_en (str): Name in English, 3-20 chars, only lowercase English letters with space/hyphen
+        name_he (str): Name in Hebrew, 3-20 chars, only Hebrew letters with space/hyphen
+        slug (str): URL-friendly version, max 15 chars, auto-generated from name_en
+
+    Validation:
+        - All names must be unique across the system
+        - No special characters allowed except space and hyphen
+        - Only appropriate alphabet characters for each language
+        - Enforces lowercase for English and Russian names
     """
     name_ru = StringField(
         required=True,
@@ -43,23 +59,17 @@ class EventType(Document):
 
     def get_name(self, lang="en"):
         """
-        Get event type name in specified language.
-
-        Args:
-            lang (str): Language code ('en', 'ru', or 'he'). Defaults to 'en'.
-
-        Returns:
-            str: Event type name in requested language.
-
-        Example:
-            >>> event_type = EventType(name_en="Concert", name_ru="Концерт", name_he="קונצרט")
-            >>> event_type.get_name('ru')
-            'концерт'
+        Retrieves event type name in specified language.
+        Language code must be one of: en, ru, he
         """
         return getattr(self, f"name_{lang}")
 
     def to_response_dict(self, lang=None):
-        """Convert event type to API response format"""
+        """
+        Converts event type to API response format.
+        If lang is specified, returns only the name in that language and slug.
+        Otherwise returns all names and slug.
+        """
         if not lang:
             return {
                 "name_ru": self.name_ru,
@@ -74,7 +84,10 @@ class EventType(Document):
             }
 
     def clean(self):
-        """Transform field values to lowercase before saving"""
+        """
+        Automatically transforms English and Russian names to lowercase
+        before saving to ensure consistency across the system
+        """
         if self.name_en:
             self.name_en = self.name_en.lower()
 

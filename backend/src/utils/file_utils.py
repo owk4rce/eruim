@@ -7,12 +7,29 @@ from backend.src.utils.exceptions import UserError
 from backend.src.utils.constants import ALLOWED_IMG_EXTENSIONS, UPLOAD_FOLDER, IMAGE_PATHS
 from .exceptions import ConfigurationError
 
+import logging
+
+logger = logging.getLogger('backend')
+
 
 def is_allowed_file(filename):
+    """
+    Check if file type is in allowed extensions list.
+    Used for image upload validation.
+    """
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMG_EXTENSIONS
 
 
 def validate_image(file):
+    """
+    Validate uploaded image file.
+
+    Checks:
+    - File presence
+    - Valid extension (PNG, JPG, JPEG)
+    - Maximum file size from config
+    - Image file integrity
+    """
     # getting config env var
     from flask import current_app
     img_max_size = current_app.config["MAX_FILE_SIZE"]
@@ -42,6 +59,13 @@ def validate_image(file):
 
 
 def save_image_from_request(file, entity_name, slug):
+    """
+    Save uploaded image for venue or event.
+
+    - Creates directory if not exists
+    - Processes image with PIL
+    - Resizes to standard width while maintaining aspect ratio
+    """
     img_dir = os.path.join(UPLOAD_FOLDER, 'img', entity_name, slug)
     os.makedirs(img_dir, exist_ok=True)
 
@@ -60,6 +84,7 @@ def save_image_from_request(file, entity_name, slug):
     img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
     img.save(file_path, 'PNG')
+    logger.info(f"Saved image for {entity_name}: {file_path}")
 
     return IMAGE_PATHS[entity_name].format(slug=slug, filename=filename)
 
@@ -67,11 +92,11 @@ def save_image_from_request(file, entity_name, slug):
 def delete_folder_from_path(image_path):
     """
     Delete folder that contains the image based on image path.
+
     Example: for '/uploads/img/venues/haifa-museum/image.png'
     deletes the 'haifa-museum' folder with all contents.
 
-    Args:
-        image_path (str): Full image path from database
+    Skips deletion if folder is 'default'.
     """
     relative_path = image_path.replace('/uploads/', '', 1)
     full_path = os.path.join(UPLOAD_FOLDER, relative_path)
@@ -82,24 +107,17 @@ def delete_folder_from_path(image_path):
 
     if os.path.exists(folder_to_delete):
         shutil.rmtree(folder_to_delete)
+        logger.info(f"Deleted folder: {folder_to_delete}")
 
 
 def rename_image_folder(entity_name, old_slug, new_slug):
     """
     Rename image folder when entity's slug changes.
+
     Example: when venue's slug changes from 'old-cafe' to 'new-cafe',
     renames '/uploads/img/venues/old-cafe' to '/uploads/img/venues/new-cafe'
 
-    Args:
-        entity_name (str): Type of entity ('venues' or 'events')
-        old_slug (str): Current slug
-        new_slug (str): New slug
-
-    Returns:
-        str: New image path if rename successful, old path if folder not found
-
-    Raises:
-        ConfigurationError: If rename operation fails
+    Returns new image path or constructs path for non-existent folder.
     """
     old_dir = os.path.join(UPLOAD_FOLDER, 'img', entity_name, old_slug)
     new_dir = os.path.join(UPLOAD_FOLDER, 'img', entity_name, new_slug)
@@ -121,6 +139,8 @@ def rename_image_folder(entity_name, old_slug, new_slug):
 
         if os.path.exists(old_file):
             os.rename(old_file, new_file)
+
+        logger.info(f"Renamed folder from {old_dir} to {new_dir}")
 
         return IMAGE_PATHS[entity_name].format(
             slug=new_slug,

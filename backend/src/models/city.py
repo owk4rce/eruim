@@ -8,7 +8,7 @@ class City(Document):
     This model stores city names in three languages (Russian, English, Hebrew)
     and a URL-friendly slug. All names must be unique across the system.
 
-    Attributes:
+    Fields:
         name_ru (str): City name in Russian. Must contain only Russian letters, spaces, and hyphens.
         name_en (str): City name in English. Must contain only English letters, spaces, and hyphens.
         name_he (str): City name in Hebrew. Must contain only Hebrew letters, spaces, and hyphens.
@@ -21,14 +21,6 @@ class City(Document):
         - English name: only a-zA-Z characters plus space and hyphen
         - Hebrew name: only Hebrew characters plus space and hyphen
         - Slug: max 50 characters, must be unique
-
-    Example:
-        >>> city = City(
-        ...     name_en="Jerusalem",
-        ...     name_ru="Иерусалим",
-        ...     name_he="ירושלים",
-        ...     slug="jerusalem"
-        ... )
     """
     name_ru = StringField(
         required=True,
@@ -67,21 +59,25 @@ class City(Document):
         """
         Get city name in specified language.
 
-        Args:
-            lang (str): Language code ('en', 'ru', or 'he'). Defaults to 'en'.
+           Args:
+               lang (str): Language code ('en', 'ru', or 'he'). Defaults to 'en'.
 
-        Returns:
-            str: City name in requested language.
-
-        Example:
-            >>> city = City(name_en="Jerusalem", name_ru="Иерусалим", name_he="ירושלים")
-            >>> city.get_name("ru")
-            'Иерусалим'
+           Returns:
+               str: City name in requested language.
         """
         return getattr(self, f"name_{lang}")
 
     def to_response_dict(self, lang=None):
-        """Convert city to API response format"""
+        """
+        Convert city to API response format.
+
+        Args:
+            lang (str, optional): If provided, returns single name in specified language.
+                                Otherwise returns all names.
+
+        Returns:
+            dict: City data formatted for API response
+        """
         if not lang:
             return {
                 "name_ru": self.name_ru,
