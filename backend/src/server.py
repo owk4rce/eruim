@@ -49,7 +49,7 @@ if not app.config.get('TESTING', False):
 @jwt.unauthorized_loader
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Unauthorized access attempt: {err_msg}")
-    return "test"
+    return "test", 1
     # return jsonify({
     #     "error": "Authentication required.",
     #     "message": err_msg
