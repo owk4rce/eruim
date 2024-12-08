@@ -129,7 +129,7 @@ def get_city(slug):
 @no_args_in_request()
 def create_city():
     """
-    Create new city
+    Create new city with auto-translation
     ---
     tags:
       - Cities
@@ -147,7 +147,7 @@ def create_city():
           properties:
             name_en:
               type: string
-              description: English name of the city
+              description: English name (3-50 chars)
               example: Jerusalem
     responses:
       201:
@@ -176,32 +176,16 @@ def create_city():
                 slug:
                   type: string
                   example: jerusalem
-      409:
-        description: City already exists
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            message:
-              type: string
-              example: "City with name Jerusalem already exists"
-      404:
-        description: City not found in Israel
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            message:
-              type: string
-              example: "City 'Jerusalem' not found in Israel"
+      400:
+        description: Invalid input data
       401:
         $ref: '#/responses/UnauthorizedError'
       403:
         $ref: '#/responses/ForbiddenError'
+      404:
+        description: City not found in Israel (GeoNames validation)
+      409:
+        description: City already exists
     """
     return create_new_city()
 
@@ -229,31 +213,13 @@ def delete_city(slug):
     responses:
       204:
         description: City successfully deleted
-      404:
-        description: City not found
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            message:
-              type: string
-              example: "City with slug 'jerusalem' not found"
-      409:
-        description: Cannot delete city with associated venues
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            message:
-              type: string
-              example: "Cannot delete this city. Please delete all associated venues first."
       401:
         $ref: '#/responses/UnauthorizedError'
       403:
         $ref: '#/responses/ForbiddenError'
+      404:
+        description: City not found
+      409:
+        description: Cannot delete city with associated venues
     """
     return delete_existing_city(slug)
