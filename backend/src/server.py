@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_talisman import Talisman
+import time
 
 from backend.src.config.config import load_config
 from backend.src.config.db import connect_db
@@ -51,9 +52,10 @@ if not app.config.get('TESTING', False):
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Unauthorized access attempt: {err_msg}")
     if request.files:
-        return jsonify({
-            "error": "Authentication required.",
-            "message": "Missing Authorization Header; Missing cookie token."}), 401
+        time.sleep(2)
+        # return jsonify({
+        #     "error": "Authentication required.",
+        #     "message": "Missing Authorization Header; Missing cookie token."}), 401
     return jsonify({
         "error": "Authentication required.",
         "message": "Missing Authorization Header; Missing cookie token."
