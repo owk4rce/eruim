@@ -89,7 +89,11 @@ else:
         content_security_policy={
             'default-src': "'self'",
             'img-src': '*',
-            'script-src': "'self'"
+            'script-src': "'self'",
+            'style-src': [
+                "'self'",
+                'https://fonts.googleapis.com'
+            ]
         }
     )
 
