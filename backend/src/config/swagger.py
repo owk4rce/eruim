@@ -4,7 +4,7 @@ Swagger/OpenAPI configuration for API documentation
 
 template = {
     "info": {
-        "title": "Cultural Events API",
+        "title": "Eruim: Cultural Events API",
         "description": """
         API for managing cultural events and venues in Israel.
         

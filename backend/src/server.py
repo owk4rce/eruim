@@ -87,15 +87,18 @@ else:
         strict_transport_security=True,
         session_cookie_secure=True,
         content_security_policy={
-            'default-src': "'self'",
+            'default-src': "'self' 'unsafe-hashes'",
             'img-src': '*',
-            'script-src': "'self'",
-            'style-src': [
-                "'self'",
-                'https://fonts.googleapis.com',
-                'https://fonts.gstatic.com'
-            ]
+            'script-src': "'self' 'sha256-hash'",
+            'style-src': "'self' 'sha256-hash'",
+            'font-src': "'self' fonts.gstatic.com",
+            'base-uri': "'self'"
         }
+        # content_security_policy={
+        #     'default-src': "'self'",
+        #     'img-src': '*',
+        #     'script-src': "'self'"
+        # }
     )
 
 connect_db(app)
