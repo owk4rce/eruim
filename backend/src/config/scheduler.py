@@ -129,6 +129,13 @@ def init_scheduler(app):
         id="deactivate_past_events"
     )
 
+    scheduler.add_job(
+        cleanup_unactivated_accounts,
+        trigger=CronTrigger(hour=0, minute=0, timezone="Asia/Jerusalem"),
+        name="cleanup_unactivated_accounts",
+        id="cleanup_unactivated_accounts"
+    )
+
     scheduler.start()
     logger.info("Background scheduler started successfully with all maintenance jobs")
     app.scheduler = scheduler  # Store scheduler instance in app context
