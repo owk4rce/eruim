@@ -33,21 +33,21 @@ class Venue(Document):
         required=True,
         min_length=5,
         max_length=200,
-        regex=r'^[а-яА-ЯёЁ\s\d,./\-]+$'
+        regex=r'^[а-яА-ЯёЁ\s\d,./\-\']+$'
     )
 
     address_en = StringField(
         required=True,
         min_length=5,
         max_length=200,
-        regex=r'^[a-zA-Z\s\d,./\-]+$'
+        regex=r'^[a-zA-Z\s\d,./\-\']+$'
     )
 
     address_he = StringField(
         required=True,
         min_length=5,
         max_length=200,
-        regex=r'^[\u0590-\u05FF\s\d,./\-]+$'
+        regex=r'^[\u0590-\u05FF\s\d,./\-\׳]+$'
     )
 
     description_ru = StringField(

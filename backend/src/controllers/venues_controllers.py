@@ -278,11 +278,11 @@ def create_new_venue():
         slug=slugify(name_en)
     )
 
+    venue.save()    # if last line of validation passed, check and save the image
+
     if "image" in request.files:
         image_path = save_image_from_request(file, "venues", venue.slug)
-        venue.image_path = image_path
-
-    venue.save()
+        Venue.objects(slug=venue.slug).update_one(set__image_path=image_path)
 
     logger.info(f"Created new venue: {name_en} in {city.name_en}")
 
