@@ -51,7 +51,7 @@ if not app.config.get('TESTING', False):
 @jwt.unauthorized_loader
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Unauthorized access attempt: {err_msg}")
-    if request.files:
+    if request.files:   # don't delete this line - it's a crutch for unexpected error
         logger.warning(f"Avoiding strange error on deployment server with no-response.")
     return jsonify({
         "error": "Authentication required.",

@@ -247,6 +247,8 @@ def create_new_venue():
 
     location = validate_and_get_location(full_address_he)
 
+    logger.debug(f"Address in Hebrew: {address_he}")
+
     # Get Russian address translation
     address_ru = translate_with_google(address_he, 'iw', 'ru')
 
