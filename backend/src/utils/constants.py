@@ -60,7 +60,7 @@ VENUE_PATTERNS = {
     # Addresses: letters, digits, basic punctuation (5-200 chars)
     'address_en': r'^[a-zA-Z\s\d,./\-\']{5,200}$',
     'address_ru': r'^[а-яА-ЯёЁ\s\d,./\-\']{5,200}$',
-    'address_he': r'^[\u0590-\u05FF\s\d,./\-\׳]{5,200}$',
+    'address_he': r'^[\u0590-\u05FF\s\d,./\-\׳\']{5,200}$',
 
     # Descriptions: extended punctuation set (20-1000 chars)
     'description_en': r'^[a-zA-Z\s\d,./\-–—:;\'\"«»!?()\[\]]{20,1000}$',

@@ -47,7 +47,7 @@ class Venue(Document):
         required=True,
         min_length=5,
         max_length=200,
-        regex=r'^[\u0590-\u05FF\s\d,./\-\׳]+$'
+        regex=r'^[\u0590-\u05FF\s\d,./\-\׳\']+$'
     )
 
     description_ru = StringField(
