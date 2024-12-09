@@ -52,7 +52,7 @@ if not app.config.get('TESTING', False):
 def custom_unauthorized_response(err_msg):
     logger.warning(f"Unauthorized access attempt: {err_msg}")
     if request.files:
-        time.sleep(1)
+        logger.warning(f"Avoiding strange error on deployment server with no-response.")
     return jsonify({
         "error": "Authentication required.",
         "message": "Missing Authorization Header; Missing cookie token."
