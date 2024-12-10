@@ -54,21 +54,21 @@ class Venue(Document):
         required=True,
         min_length=20,
         max_length=1000,
-        regex=r'^[а-яА-ЯёЁ\s\d,./\-–—:;\'\"«»„“”!?()\[\]]+$'
+        regex=r'^[а-яА-ЯёЁ\s\d,./\-–—:;\'\"«»„“”!?(’)\[\]]+$'
     )
 
     description_en = StringField(
         required=True,
         min_length=20,
         max_length=1000,
-        regex=r'^[a-zA-Z\s\d,./\-–—:;\'\"«»!?()\[\]]+$'
+        regex=r'^[a-zA-Z\s\d,./\-–—:;\'\"«»!?(’)\[\]]+$'
     )
 
     description_he = StringField(
         required=True,
         min_length=20,
         max_length=1000,
-        regex=r'^[\u0590-\u05FF\s\d,./\-–—:;\'\"«»!?()\[\]]+$'
+        regex=r'^[\u0590-\u05FF\s\d,./\-–—:;\'\"«»!?(’)\[\]]+$'
     )
 
     venue_type = ReferenceField(

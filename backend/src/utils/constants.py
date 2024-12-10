@@ -63,9 +63,9 @@ VENUE_PATTERNS = {
     'address_he': r'^[\u0590-\u05FF\s\d,./\-\׳\']{5,200}$',
 
     # Descriptions: extended punctuation set (20-1000 chars)
-    'description_en': r'^[a-zA-Z\s\d,./\-–—:;\'\"«»!?()\[\]]{20,1000}$',
-    'description_ru': r'^[а-яА-ЯёЁ\s\d,./\-–—:;\'\"«»„""!?()\[\]]{20,1000}$',
-    'description_he': r'^[\u0590-\u05FF\s\d,./\-–—:;\'\"«»!?()\[\]]{20,1000}$',
+    'description_en': r'^[a-zA-Z\s\d,./\-–—:;\'\"«»!?(’)\[\]]{20,1000}$',
+    'description_ru': r'^[а-яА-ЯёЁ\s\d,./\-–—:;\'\"«»„""!?(’)\[\]]{20,1000}$',
+    'description_he': r'^[\u0590-\u05FF\s\d,./\-–—:;\'\"«»!?(’)\[\]]{20,1000}$',
 
     # References to other entities (English names only)
     'city_en': r'^[a-zA-Z\s\-]{2,30}$',
