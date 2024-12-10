@@ -279,10 +279,12 @@ def create_new_venue():
     )
 
     venue.save()    # if last line of validation passed, check and save the image
+    venue.reload()
 
     if "image" in request.files:
         image_path = save_image_from_request(file, "venues", venue.slug)
         Venue.objects(slug=venue.slug).update_one(set__image_path=image_path)
+        venue.reload()
 
     logger.info(f"Created new venue: {name_en} in {city.name_en}")
 
@@ -413,15 +415,16 @@ def full_update_existing_venue(slug):
         if venue.location["coordinates"] != location["coordinates"]:
             update_data["set__location"] = location
 
-    if "image" in request.files:
-        image_path = save_image_from_request(file, "venues", venue.slug)
-        update_data["set__image_path"] = image_path
-
     # atomic update
     Venue.objects(slug=slug).update_one(**update_data)
 
     # reload to get new for response
     venue.reload()
+
+    if "image" in request.files:
+        image_path = save_image_from_request(file, "venues", venue.slug)
+        Venue.objects(slug=venue.slug).update_one(set__image_path=image_path)
+        venue.reload()
 
     logger.info(f"Full update of venue: {venue.name_en}")
 
@@ -491,6 +494,7 @@ def part_update_existing_venue(slug):
     # Track changes
     update_data = {}
     unchanged_params = []
+    updated_params = []
 
     for param, value in data.items():
         match param:
@@ -562,12 +566,13 @@ def part_update_existing_venue(slug):
 
     if "image" in request.files:
         image_path = save_image_from_request(file, "venues", venue.slug)
-        update_data["set__image_path"] = image_path
+        Venue.objects(slug=venue.slug).update_one(set__image_path=image_path)
+        updated_params.append("image_path")
 
     if update_data:
         Venue.objects(slug=slug).update_one(**update_data)
         venue.reload()
-        updated_params = [param.replace('set__', '') for param in update_data.keys()]
+        updated_params.extend([param.replace('set__', '') for param in update_data.keys()])
         logger.info(f"Partial update of venue {venue.name_en}, fields: {', '.join(updated_params)}")
         message = f"Updated parameters: {', '.join(updated_params)}"
         if unchanged_params:

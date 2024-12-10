@@ -239,12 +239,82 @@ def full_update_venue(slug):
         type: file
         description: New venue image
         required: false
-      # Same parameters as in POST
+      - in: formData
+        name: name_en
+        type: string
+        description: English name (3-100 chars)
+        required: true
+      - in: formData
+        name: name_ru
+        type: string
+        description: Russian name (3-100 chars)
+        required: true
+      - in: formData
+        name: name_he
+        type: string
+        description: Hebrew name (3-100 chars)
+        required: true
+      - in: formData
+        name: address_en
+        type: string
+        description: English address (5-200 chars)
+        required: true
+      - in: formData
+        name: address_ru
+        type: string
+        description: Russian address (5-200 chars)
+        required: true
+      - in: formData
+        name: address_he
+        type: string
+        description: Hebrew address (5-200 chars)
+        required: true
+      - in: formData
+        name: city_en
+        type: string
+        description: English city name
+        required: true
+      - in: formData
+        name: venue_type_en
+        type: string
+        description: English venue type name
+        required: true
+      - in: formData
+        name: description_en
+        type: string
+        description: English description (20-1000 chars)
+        required: true
+      - in: formData
+        name: description_ru
+        type: string
+        description: Russian description (20-1000 chars)
+        required: true
+      - in: formData
+        name: description_he
+        type: string
+        description: Hebrew description (20-1000 chars)
+        required: true
+      - in: formData
+        name: website
+        type: string
+        description: Website URL
+        required: true
+      - in: formData
+        name: phone
+        type: string
+        description: Phone number (9-15 digits)
+        required: true
+      - in: formData
+        name: email
+        type: string
+        format: email
+        description: Contact email
+        required: true
       - in: formData
         name: is_active
         type: boolean
-        required: true
         description: Venue status
+        required: true
     responses:
       200:
         description: Venue updated successfully
@@ -303,7 +373,82 @@ def part_update_venue(slug):
         type: file
         description: New venue image
         required: false
-      # Any parameter from POST/PUT, all optional
+      - in: formData
+        name: name_en
+        type: string
+        description: English name (3-100 chars)
+        required: false
+      - in: formData
+        name: name_ru
+        type: string
+        description: Russian name (3-100 chars)
+        required: false
+      - in: formData
+        name: name_he
+        type: string
+        description: Hebrew name (3-100 chars)
+        required: false
+      - in: formData
+        name: address_en
+        type: string
+        description: English address (5-200 chars)
+        required: false
+      - in: formData
+        name: address_ru
+        type: string
+        description: Russian address (5-200 chars)
+        required: false
+      - in: formData
+        name: address_he
+        type: string
+        description: Hebrew address (5-200 chars)
+        required: false
+      - in: formData
+        name: city_en
+        type: string
+        description: English city name
+        required: false
+      - in: formData
+        name: venue_type_en
+        type: string
+        description: English venue type name
+        required: false
+      - in: formData
+        name: description_en
+        type: string
+        description: English description (20-1000 chars)
+        required: false
+      - in: formData
+        name: description_ru
+        type: string
+        description: Russian description (20-1000 chars)
+        required: false
+      - in: formData
+        name: description_he
+        type: string
+        description: Hebrew description (20-1000 chars)
+        required: false
+      - in: formData
+        name: website
+        type: string
+        description: Website URL
+        required: false
+      - in: formData
+        name: phone
+        type: string
+        description: Phone number (9-15 digits)
+        required: false
+      - in: formData
+        name: email
+        type: string
+        format: email
+        description: Contact email
+        required: false
+      - in: formData
+        name: is_active
+        type: boolean
+        description: Venue status
+        required: false
     responses:
       200:
         description: Venue partially updated successfully

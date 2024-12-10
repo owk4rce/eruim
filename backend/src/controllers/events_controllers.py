@@ -17,6 +17,7 @@ from backend.src.models.event_type import EventType
 from backend.src.utils.date_utils import convert_to_utc, convert_to_local, remove_timezone
 
 import logging
+
 logger = logging.getLogger("backend")
 
 
@@ -291,12 +292,13 @@ def create_new_event():
         slug=slugify(f"{name_en}-{slug_date}")
     )
 
-    event.save()     # if last line of validation passed, check and save the image
+    event.save()  # if last line of validation passed, check and save the image
     event.reload()
 
     if "image" in request.files:
         image_path = save_image_from_request(file, "events", event.slug)
         Event.objects(slug=event.slug).update_one(set__image_path=image_path)
+        event.reload()
 
     logger.info(f"Created new event: {name_en}")
 
@@ -413,12 +415,13 @@ def full_update_existing_event(slug):
 
     event.slug = new_slug
 
-    if "image" in request.files:
-        image_path = save_image_from_request(file, "events", event.slug)
-        event.image_path = image_path
-
     event.save()
     event.reload()  # correct time (while saving it is in our timezone but stores in utc)
+
+    if "image" in request.files:
+        image_path = save_image_from_request(file, "events", event.slug)
+        Event.objects(slug=event.slug).update_one(set__image_path=image_path)
+        event.reload()
 
     logger.info(f"Full update of event: {event.name_en}")
 
@@ -538,7 +541,8 @@ def part_update_existing_event(slug):
 
     if "image" in request.files:
         image_path = save_image_from_request(file, "events", event.slug)
-        event.image_path = image_path
+        Event.objects(slug=slug).update_one(set__image_path=image_path)
+        event.reload()
         updated_params.append("image_path")
 
     if updated_params:
@@ -558,7 +562,7 @@ def part_update_existing_event(slug):
 
         event.save()
         event.reload()  # correct time (while saving it is in our timezone but stores in utc)
-        logger.info(f"Partial update of event {event.name_en}, fields: {', '.join(updated_params)}")
+        logger.info(f"Partial update of event {event.name_en}, parameters: {', '.join(updated_params)}")
         message = f"Updated parameters: {', '.join(updated_params)}"
         if unchanged_params:
             message += f". Unchanged parameters: {', '.join(unchanged_params)}"
