@@ -106,7 +106,7 @@ PRICE_TYPE_TRANSLATIONS = {
 
 # Query parameters allowed for GET /events/
 ALLOWED_EVENT_GET_ALL_ARGS = {
-    "lang", "is_active", "city", "venue", "sort"
+    "lang", "is_active", "city", "venue", "type", "sort"
 }
 
 # Body parameters allowed for POST /events/

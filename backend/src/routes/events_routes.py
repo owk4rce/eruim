@@ -43,6 +43,11 @@ def get_events():
         description: Filter by venue slug (mutually exclusive with city)
         required: false
       - in: query
+        name: type
+        type: string
+        description: Filter by event type slug
+        required: false
+      - in: query
         name: sort
         type: string
         enum: [asc, desc]

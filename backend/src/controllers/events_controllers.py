@@ -59,6 +59,7 @@ def get_all_events():
 
     city_slug_arg = request.args.get("city")
     venue_slug_arg = request.args.get("venue")
+    event_type_slug_arg = request.args.get("type")
 
     if city_slug_arg and venue_slug_arg:
         raise UserError("Only one argument, 'city' or 'venue', is allowed. ")
@@ -79,6 +80,14 @@ def get_all_events():
             raise UserError(f"Venue with slug '{venue_slug_arg}' not found.", 404)
 
         query["venue"] = venue
+
+    # if type filter
+    if event_type_slug_arg:
+        event_type = EventType.objects(slug=event_type_slug_arg).first()
+        if not event_type:
+            raise UserError(f"Event type with slug '{venue_slug_arg}' not found.", 404)
+
+        query["event_type"] = event_type
 
     # Handle sorting by start_date (desc by default to show upcoming events first)
     sort_direction = request.args.get("sort", "desc")
