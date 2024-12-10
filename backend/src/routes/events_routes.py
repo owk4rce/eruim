@@ -294,7 +294,7 @@ def full_update_event(slug):
 @no_args_in_request()
 def part_update_event(slug):
     """
-    Partial update of event
+        Partial update of event
     ---
     tags:
       - Events
@@ -315,7 +315,74 @@ def part_update_event(slug):
         type: file
         description: New event image
         required: false
-      # Any parameter from POST route, all optional
+      - in: formData
+        name: name_en
+        type: string
+        description: English name (3-200 chars)
+        required: false
+      - in: formData
+        name: name_ru
+        type: string
+        description: Russian name (3-200 chars)
+        required: false
+      - in: formData
+        name: name_he
+        type: string
+        description: Hebrew name (3-200 chars)
+        required: false
+      - in: formData
+        name: description_en
+        type: string
+        description: English description (20-2000 chars)
+        required: false
+      - in: formData
+        name: description_ru
+        type: string
+        description: Russian description (20-2000 chars)
+        required: false
+      - in: formData
+        name: description_he
+        type: string
+        description: Hebrew description (20-2000 chars)
+        required: false
+      - in: formData
+        name: venue_slug
+        type: string
+        description: Venue slug
+        required: false
+      - in: formData
+        name: event_type_slug
+        type: string
+        description: Event type slug
+        required: false
+      - in: formData
+        name: start_date
+        type: string
+        description: Start date in format YYYY-MM-DD HH:MM or YYYY-MM-DD
+        required: false
+        example: "2024-12-31 19:00"
+      - in: formData
+        name: end_date
+        type: string
+        description: End date in format YYYY-MM-DD HH:MM or YYYY-MM-DD
+        required: false
+        example: "2024-12-31 23:00"
+      - in: formData
+        name: price_type
+        type: string
+        enum: [free, tba, fixed, starting_from]
+        description: Price type
+        required: false
+      - in: formData
+        name: price_amount
+        type: integer
+        description: Required for fixed and starting_from price types
+        required: false
+      - in: formData
+        name: is_active
+        type: boolean
+        description: Event status
+        required: false
     responses:
       200:
         description: Event partially updated successfully
