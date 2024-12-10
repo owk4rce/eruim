@@ -282,12 +282,11 @@ def create_new_event():
         slug=slugify(f"{name_en}-{slug_date}")
     )
 
+    event.save()     # if last line of validation passed, check and save the image
+
     if "image" in request.files:
         image_path = save_image_from_request(file, "events", event.slug)
-        event.image_path = image_path
-
-    event.save()
-    event.reload()  # correct time (while saving it is in our timezone but stores in utc)
+        Event.objects(slug=event.slug).update_one(set__image_path=image_path)
 
     logger.info(f"Created new event: {name_en}")
 
