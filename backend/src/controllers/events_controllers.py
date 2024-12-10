@@ -283,6 +283,7 @@ def create_new_event():
     )
 
     event.save()     # if last line of validation passed, check and save the image
+    event.reload()
 
     if "image" in request.files:
         image_path = save_image_from_request(file, "events", event.slug)
