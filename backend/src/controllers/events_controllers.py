@@ -85,7 +85,7 @@ def get_all_events():
     if event_type_slug_arg:
         event_type = EventType.objects(slug=event_type_slug_arg).first()
         if not event_type:
-            raise UserError(f"Event type with slug '{venue_slug_arg}' not found.", 404)
+            raise UserError(f"Event type with slug '{event_type_slug_arg}' not found.", 404)
 
         query["event_type"] = event_type
 
