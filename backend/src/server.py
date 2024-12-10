@@ -3,7 +3,6 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_talisman import Talisman
-import time
 
 from backend.src.config.config import load_config
 from backend.src.config.db import connect_db
@@ -13,7 +12,6 @@ from backend.src.config.swagger import get_swagger_config, get_swagger_template
 from backend.src.routes import api_v1_bp
 from backend.src.utils.error_handlers import register_error_handlers
 from backend.src.config.scheduler import init_scheduler
-from backend.src.utils.exceptions import UserError
 
 app = Flask(__name__)
 
