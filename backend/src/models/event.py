@@ -30,21 +30,21 @@ class Event(Document):
         required=True,
         min_length=20,
         max_length=2000,
-        regex=r'^[а-яА-ЯёЁ\d\s\-–—.,!?()\'\"«»„":\[\];]+$'
+        regex=r'^[а-яА-ЯёЁ\d\s\-–—.,!?(“”)\'\"«»„":\[\];]+$'
     )
 
     description_en = StringField(
         required=True,
         min_length=20,
         max_length=2000,
-        regex=r'^[a-zA-Z\d\s\-–—.,!?(’)\'\"«»:\[\];]+$'
+        regex=r'^[a-zA-Z\d\s\-–—.,!?(’“”)\'\"«»:\[\];]+$'
     )
 
     description_he = StringField(
         required=True,
         min_length=20,
         max_length=2000,
-        regex=r'^[\u0590-\u05FF\d\s\-–—.,!?()\'\"«»״׳:\[\];]+$'
+        regex=r'^[\u0590-\u05FF\d\s\-–—.,!?(“”)\'\"«»״׳:\[\];]+$'
     )
 
     start_date = DateTimeField(
